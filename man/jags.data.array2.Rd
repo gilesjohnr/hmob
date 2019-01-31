@@ -7,10 +7,14 @@
 jags.data.array2(d, time = "month", variable = "distance")
 }
 \arguments{
-\item{a}{origin district (can take integer ID or character name)}
+\item{d}{Longform data with metadata attached}
+
+\item{time}{The temporal interal used to construct the array (default = 'month')}
+
+\item{variable}{Character string giving the response variable: 'distance' or 'duration' (default = 'distance')}
 }
 \value{
-matrix or dataframe
+A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}
 }
 \description{
 This function that builds data arrays at the time-level (e.g. month) for use in JAGS. The data arrays contain counts of either 

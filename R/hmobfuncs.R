@@ -623,9 +623,11 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' The difference in array dimensions occurs because the destination dimension must be collapsed in order to
 ##' perform counts of trip distance, leaving only the origin, time, and distance counts.
 ##' 
-##' @param origin district (can take integer ID or character name)
+##' @param d Longform data with metadata attached
+##' @param time The temporal interal used to construct the array (default = 'month')
+##' @param variable Character string giving the response variable: 'distance' or 'duration' (default = 'distance')
 ##' 
-##' @return matrix or dataframe
+##' @return A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}
 ##' 
 ##' @author John Giles
 ##'
@@ -634,7 +636,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @export
 ##' 
 
-jags.data.array2 <- function(d_path,                        # filepath to longform data
+jags.data.array2 <- function(d,                             # filepath to longform data
                              time='month',                  # temporal interval
                              variable='distance'            # character string giving the response variable: 'distance' or 'duration'
 ) {
@@ -698,11 +700,7 @@ jags.data.array2 <- function(d_path,                        # filepath to longfo
           
           print("Initialized out array")
           
-          # Call C
-          #' @useDynLib hmob optim_array_loop
-          out <- .Call("optim_array_loop", d_path)
-          
-           # populate NA array with observed counts
+          # populate NA array with observed counts
           for (i in 1:nrow(d)) {
                
                print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
