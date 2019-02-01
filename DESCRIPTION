@@ -9,7 +9,7 @@ Description: Functions for parsing data on human mobility patterns and associate
 License: GPL (>=2)
 RoxygenNote: 6.1.1
 Encoding: UTF-8
-Imports: sp, rgdal, rgeos, stringr, lattice, plot3D
-Depends: doParallel, foreach, parallel, R (>= 2.10)
+Imports: lattice, plot3D
+Depends: sp, rgdal, rgeos, stringr, doParallel, foreach, parallel, R (>= 2.10)
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr

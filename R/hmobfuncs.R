@@ -660,6 +660,10 @@ jags.data.array2 <- function(d,                             # filepath to longfo
           
           print("Initialized out array")
           
+          # Call C
+          # @useDynLib hmob optim_array_loop
+          #out <- .Call("optim_array_loop", d_path)
+          
           # populate NA array with observed counts
           for (i in 1:nrow(d)) {
                
