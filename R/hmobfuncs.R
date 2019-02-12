@@ -636,7 +636,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @export
 ##' 
 
-jags.data.array2 <- function(d,                             # filepath to longform data
+jags.data.array <- function(d,                             # filepath to longform data
                              time='month',                  # temporal interval
                              variable='distance'            # character string giving the response variable: 'distance' or 'duration'
 ) {
@@ -735,4 +735,71 @@ jags.data.array2 <- function(d,                             # filepath to longfo
      
      print("Finished jags.data.array")
      return(out)
+}
+
+##' Proportion of individuals remaining for full epidemic generation
+##'
+##' This function calculates the proportion of individuals that remain a location for
+##' all of epidemic generation $n$. The value is represented by the variable \eqn{p_{jt}^{g(n)}}, which
+##' is defined as the effective probability if individuals that stay for a full epidemic generation 
+##' when they travel to destination \eqn{j} at time \eqn{t}:
+##' \deqn{
+##' p_{jt}^{g(n)} = \Pr(\text{remaining for all of n^{th} epidemic generation} \mid \text{generation time})
+##' }
+##' 
+##' @param d 4-dimensional data array produced by the \code{\link{jags.data.array}} function \emph{or} the \code{duration.array.month.level} data object in the \pkg{hmobdata} package
+##' @param gen.t the time interval in days used to define the epidemic generation
+##' @param n.gen a scalar indicating the $n^th$ generation for which to calculate proportion of individuals remaining for the full epidemic generation
+##' 
+##' @return A 4-dimensional array with values between 0 and 1
+##' 
+##' @author John Giles
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+calc.p <- function(d,            # 4D data array produced by the jags.data.array or jags.data.array.route.level functions
+                   gen.t,        # interval used to define the epidemic generation
+                   n.gen=1       # a scalar indicating the maximum epidemic generation to calculate rho for
+) {
+     
+     out <- array(NA, dim(d)[1:3])
+     
+     for (i in 1:dim(d)[1]) {
+          for (j in 1:dim(d)[2]) {
+               for (t in 1:dim(d)[3]) {
+                    
+                    x <- d[i,j,t,which(as.numeric(dimnames(d)$duration) > gen.t*(n.gen-1) & 
+                                            as.numeric(dimnames(d)$duration) <= gen.t*n.gen)]
+                    
+                    out[i,j,t] <- (x %*% (seq_along(x)/length(x))) / sum(x, na.rm=T)
+                    
+               }
+          }
+     }
+     return(out)
+}
+
+##' Get parameters for Beta distribution
+##'
+##' This function to calculates the two shape parameters (\code{alpha} and \code{beta}) for the Beta distribution 
+##' using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 0 and one 1.
+##' 
+##' @param m the mean \egn{\mu} of a random variable between 0 and 1
+##' @param v the variance \egn{\sigma^2} of a random variable between 0 and 1
+##' 
+##' @return A list containing \code{alpha} and \code{beta}
+##' 
+##' @author John Giles
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+get.beta.params <- function(m, v) {
+     a <- ((1-m) / v - 1/m) * m^2 
+     list(alpha=a, beta=a * (1 / m-1))
 }
