@@ -760,9 +760,9 @@ jags.data.array <- function(d,                             # filepath to longfor
 ##' @export
 ##' 
 
-calc.p <- function(d,            # 4D data array produced by the jags.data.array or jags.data.array.route.level functions
-                   gen.t,        # interval used to define the epidemic generation
-                   n.gen=1       # a scalar indicating the maximum epidemic generation to calculate rho for
+calc.p <- function(d,       # 4D data array produced by the jags.data.array function
+                   gen.t,   # interval used to define the epidemic generation
+                   n.gen=1  # a scalar indicating the maximum epidemic generation to calculate rho for
 ) {
      
      out <- array(NA, dim(d)[1:3])
@@ -771,10 +771,11 @@ calc.p <- function(d,            # 4D data array produced by the jags.data.array
           for (j in 1:dim(d)[2]) {
                for (t in 1:dim(d)[3]) {
                     
+                    if (i == j) (next)
                     x <- d[i,j,t,which(as.numeric(dimnames(d)$duration) > gen.t*(n.gen-1) & 
                                             as.numeric(dimnames(d)$duration) <= gen.t*n.gen)]
                     
-                    out[i,j,t] <- (x %*% (seq_along(x)/length(x))) / sum(x, na.rm=T)
+                    out[i,j,t] <- (x[!is.na(x)] %*% (seq_along(x)[!is.na(x)]/length(x))) / (sum(x, na.rm=T))
                     
                }
           }
