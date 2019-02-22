@@ -626,7 +626,8 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @param d Longform data with metadata attached
 ##' @param time The temporal interal used to construct the array (default = \code{'month'})
 ##' @param variable Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}
-##' @param parallel Logical indicating whether to execute in parallel (default = FALSE)
+##' @param gen.t The length of generation time (in days) by which to aggregate trip durations
+##' @param parallel Logical indicating whether to execute in parallel (default = 1)
 ##' @param n.cores Number of cores to use when \code{parallel = TRUE} (default = NULL, which uses half available cores)
 ##' @return A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}
 ##' 
@@ -639,10 +640,13 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 
 jags.data.array <- function(d,                            # data
                             time='month',                 # temporal interval
-                            variable,                     # character string giving the response variable: 'distance' or 'duration'
+                            variable='duration',          # character string giving the response variable: 'distance' or 'duration'
+                            gen.t=1,                      # length of epidemic generation in days
                             parallel=FALSE,               # whether or not to execute in parallel
                             n.cores=NULL
 ) {
+     
+     if (gen.t < 1) stop('Generation time gen.t must be at least 1')
      
      if (parallel == TRUE) {
           
@@ -678,40 +682,38 @@ jags.data.array <- function(d,                            # data
                dimnames(out) <- list(origin=o, time=t, distance=1:ceiling(max(d[,variable])))
                
           } else if (variable == 'duration') {
+               
                print("Variable is duration")
                
-               orig <- sort(unique(d$from))                # rows = i
-               dest <- sort(unique(d$to))                  # cols = j
-               t <- sort(unique(d[,time]))                 # 3D = k
-               v <- sort(unique(d[,variable]))             # 4D = l
+               n.gen <- floor(max(d[,variable])/gen.t)
+               
+               orig <- sort(unique(d$from))                # rows = i origins
+               dest <- sort(unique(d$to))                  # cols = j destinations
+               t <- sort(unique(d[,time]))                 # 3D = k months
+               g <- 1:n.gen                                # 4D  = l generations
                
                registerDoParallel(cores=n.cores)
                
-               # Intialize array
-               out <- array(numeric(0), dim=c(length(orig), length(dest), length(t), ceiling(max(d[,variable]))))
-               print("Initialized out array")
-               
-               # get counts for observed route distances
-               tmp <- foreach(l = v, .combine=function(a, b) abind(a, b, along=4)) %:%
+               out <- foreach(l = g, .combine=function(a, b) abind(a, b, along=4)) %:%
                     foreach(k = t, .combine=function(a, b) abind(a, b, along=3)) %:% 
                     foreach(i = orig, .combine='rbind', .multicombine=TRUE) %:% 
                     foreach(j = dest, .combine='c', .multicombine=TRUE) %dopar% {
                          
-                         sum(d$from == i & d$to == j & d[,time] == k & d[,variable] == l)
+                         x <- sum(d[d$from == i 
+                                    & d$to == j 
+                                    & d[,time] == k  
+                                    & d[,variable] > (l*gen.t - gen.t) 
+                                    & d[,variable] <= l*gen.t, 
+                                    'count'], 
+                                  na.rm=TRUE)
+                         
+                         if (x == 0) x <- NA
+                         x
                     }
+               
                print("Finished foreach parallel part")
                
-               # populate NA array with observed counts
-               for (i in 1:length(orig)) {
-                    for (j in 1:length(dest)) {
-                         durs <- unique(d[d$from == orig[i] & d$to == dest[j], variable])
-                         for (l in durs) {
-                              out[i,j,,l] <- tmp[i,j,,which(v == l)]
-                         }
-                    }
-               }
-               
-               dimnames(out) <- list(origin=orig, destination=dest, time=t, duration=1:max(d[,variable]))
+               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=1:n.gen)
           }
      }
      
@@ -719,12 +721,13 @@ jags.data.array <- function(d,                            # data
           
           print("Beginning sequential jags.data.array")
           
-          orig <- sort(unique(d$from))  
-          dest <- sort(unique(d$to)) # (duration only)
-          t <- sort(unique(d[,time]))                
-          v <- sort(unique(d[,variable]))   
+          
           
           if (variable == 'distance') {
+               
+               orig <- sort(unique(d$from))
+               t <- sort(unique(d[,time]))                
+               v <- sort(unique(d[,variable])) 
                
                print("Variable is distance")
                
@@ -767,12 +770,19 @@ jags.data.array <- function(d,                            # data
                
                print("Variable is duration")
                
+               n.gen <- floor(max(d[,variable])/gen.t)
+               
+               orig <- sort(unique(d$from))  
+               dest <- sort(unique(d$to))
+               t <- sort(unique(d[,time]))                
+               g <- 1:n.gen
+               
                # Intialize array
                out <- array(numeric(0), 
                             dim=c(max(orig), 
                                   max(dest), 
                                   max(t), 
-                                  ceiling(max(d[,variable]))))
+                                  n.gen))
                
                print("Initialized out array")
                
@@ -781,33 +791,75 @@ jags.data.array <- function(d,                            # data
                     
                     print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
                     
+                    if (d[i, variable] > gen.t*n.gen) (next)
+                    
                     sel <- out[d[i, 'from'], 
                                d[i, 'to'], 
-                               d[i, time], 
-                               ceiling(d[i, variable])]
+                               d[i, time],
+                               ceiling(d[i,variable]/gen.t)]
                     
                     if (is.na(sel)) {
                          
                          out[d[i, 'from'], 
                              d[i, 'to'], 
                              d[i, time], 
-                             ceiling(d[i, variable])] <- d[i, 'count']
+                             ceiling(d[i, variable]/gen.t)] <- d[i, 'count']
                          
                     } else {
                          
                          out[d[i, 'from'], 
                              d[i, 'to'], 
                              d[i, time], 
-                             ceiling(d[i, variable])] <- sel + d[i, 'count']
+                             ceiling(d[i, variable]/gen.t)] <- sel + d[i, 'count']
                     }
                }
                
-               dimnames(out) <- list(origin=1:max(orig), destination=1:max(dest), time=1:max(t), duration=1:ceiling(max(d[,variable])))
+               dimnames(out) <- list(origin=1:max(orig), destination=1:max(dest), time=1:max(t), generation=1:n.gen)
           }
      }
      
      print("Finished jags.data.array")
      return(out)
+}
+
+##' Reduce a jags.data.array object to route-level
+##' 
+##' This function reduces the output from the \code{\link{jags.data.array}} function---which contains data for the
+##' month-level---to a route-level data array. The route-level array contains the mean value across all
+##' months.
+##' 
+##' @param x Month-level Output from the \code{\link{jags.data.array}} function
+##' @param variable The variable in the data object (expects either \code{'distance'} or \code{'duration'})
+##' 
+##' @return A 2-dimensional array when \code{variable = 'distance'}, and a 3-dimensional array when \code{variable = 'duration'}
+##' 
+##' @author John Giles
+##'
+##' @family model processing
+##' 
+##' @export
+##' 
+
+jags.data.array.route.level <- function(x,              # output from jags.data.array function
+                                        variable        # 'distance' or 'duration'
+){
+     
+     if (variable == 'distance') {
+          
+          x <- apply(distance.array.month.level, 
+                     c(1,3), 
+                     function(x) as.integer(round(mean(x, na.rm=TRUE))))
+          
+     } else if (variable == 'duration') {
+          
+          x <- apply(x, 
+                     c(1,2,4), 
+                     function(x) as.integer(round(mean(x, na.rm=TRUE))))
+          
+     }
+     
+     x[is.nan(x)] <- NA
+     return(x)
 }
 
 ##' Proportion of individuals remaining for full epidemic generation
@@ -858,13 +910,13 @@ calc.p <- function(d,       # 4D data array produced by the jags.data.array func
 
 ##' Get parameters for Beta distribution
 ##'
-##' This function to calculates the two shape parameters (\code{alpha} and \code{beta}) for the Beta distribution 
+##' This function to calculates the two shape parameters (\eqn{a} and \eqn{b}) for the Beta distribution 
 ##' using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 0 and one 1.
 ##' 
-##' @param m the mean \egn{\mu} of a random variable between 0 and 1
-##' @param v the variance \egn{\sigma^2} of a random variable between 0 and 1
+##' @param m the mean \eqn{\mu} of a random variable between 0 and 1
+##' @param v the variance \eqn{\sigma^2} of a random variable between 0 and 1
 ##' 
-##' @return A list containing \code{alpha} and \code{beta}
+##' @return A list containing shape parameters \code{a} and \code{b}
 ##' 
 ##' @author John Giles
 ##'
@@ -875,5 +927,5 @@ calc.p <- function(d,       # 4D data array produced by the jags.data.array func
 
 get.beta.params <- function(m, v) {
      a <- ((1-m) / v - 1/m) * m^2 
-     list(alpha=a, beta=a * (1 / m-1))
+     list(a=a, b=a * (1 / m-1))
 }

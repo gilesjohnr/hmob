@@ -7,15 +7,15 @@
 get.beta.params(m, v)
 }
 \arguments{
-\item{m}{the mean \egn{\mu} of a random variable between 0 and 1}
+\item{m}{the mean \eqn{\mu} of a random variable between 0 and 1}
 
-\item{v}{the variance \egn{\sigma^2} of a random variable between 0 and 1}
+\item{v}{the variance \eqn{\sigma^2} of a random variable between 0 and 1}
 }
 \value{
-A list containing \code{alpha} and \code{beta}
+A list containing shape parameters \code{a} and \code{b}
 }
 \description{
-This function to calculates the two shape parameters (\code{alpha} and \code{beta}) for the Beta distribution 
+This function to calculates the two shape parameters (\eqn{a} and \eqn{b}) for the Beta distribution 
 using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 0 and one 1.
 }
 \seealso{

@@ -4,8 +4,8 @@
 \alias{jags.data.array}
 \title{Build JAGS data array}
 \usage{
-jags.data.array(d, time = "month", variable, parallel = FALSE,
-  n.cores = NULL)
+jags.data.array(d, time = "month", variable = "duration", gen.t = 1,
+  parallel = FALSE, n.cores = NULL)
 }
 \arguments{
 \item{d}{Longform data with metadata attached}
@@ -14,7 +14,9 @@ jags.data.array(d, time = "month", variable, parallel = FALSE,
 
 \item{variable}{Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}}
 
-\item{parallel}{Logical indicating whether to execute in parallel (default = FALSE)}
+\item{gen.t}{The length of generation time (in days) by which to aggregate trip durations}
+
+\item{parallel}{Logical indicating whether to execute in parallel (default = 1)}
 
 \item{n.cores}{Number of cores to use when \code{parallel = TRUE} (default = NULL, which uses half available cores)}
 }
@@ -27,6 +29,9 @@ the distance or duration of trips. When 'distance' is selected as the variable, 
 a three-dimensional array and when 'duration' is selected, the function returns a four-dimensional array.
 The difference in array dimensions occurs because the destination dimension must be collapsed in order to
 perform counts of trip distance, leaving only the origin, time, and distance counts.
+}
+\seealso{
+Other model processing: \code{\link{jags.data.array.route.level}}
 }
 \author{
 John Giles
