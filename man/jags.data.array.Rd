@@ -4,14 +4,19 @@
 \alias{jags.data.array}
 \title{Build JAGS data array}
 \usage{
-jags.data.array(d, time = "month", variable = "distance")
+jags.data.array(d, time = "month", variable, parallel = FALSE,
+  n.cores = NULL)
 }
 \arguments{
 \item{d}{Longform data with metadata attached}
 
-\item{time}{The temporal interal used to construct the array (default = 'month')}
+\item{time}{The temporal interal used to construct the array (default = \code{'month'})}
 
-\item{variable}{Character string giving the response variable: 'distance' or 'duration' (default = 'distance')}
+\item{variable}{Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}}
+
+\item{parallel}{Logical indicating whether to execute in parallel (default = FALSE)}
+
+\item{n.cores}{Number of cores to use when \code{parallel = TRUE} (default = NULL, which uses half available cores)}
 }
 \value{
 A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}

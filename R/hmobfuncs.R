@@ -624,9 +624,10 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' perform counts of trip distance, leaving only the origin, time, and distance counts.
 ##' 
 ##' @param d Longform data with metadata attached
-##' @param time The temporal interal used to construct the array (default = 'month')
-##' @param variable Character string giving the response variable: 'distance' or 'duration' (default = 'distance')
-##' 
+##' @param time The temporal interal used to construct the array (default = \code{'month'})
+##' @param variable Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}
+##' @param parallel Logical indicating whether to execute in parallel (default = FALSE)
+##' @param n.cores Number of cores to use when \code{parallel = TRUE} (default = NULL, which uses half available cores)
 ##' @return A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}
 ##' 
 ##' @author John Giles
@@ -636,101 +637,173 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @export
 ##' 
 
-jags.data.array <- function(d,                             # filepath to longform data
-                             time='month',                  # temporal interval
-                             variable='distance'            # character string giving the response variable: 'distance' or 'duration'
+jags.data.array <- function(d,                            # data
+                            time='month',                 # temporal interval
+                            variable,                     # character string giving the response variable: 'distance' or 'duration'
+                            parallel=FALSE,               # whether or not to execute in parallel
+                            n.cores=NULL
 ) {
      
-     print("Beginning jags.data.array")
-     
-     orig <- sort(unique(d$from))  
-     dest <- sort(unique(d$to)) # (duration only)
-     t <- sort(unique(d[,time]))                
-     v <- sort(unique(d[,variable]))   
-     
-     if (variable == 'distance') {
+     if (parallel == TRUE) {
           
-          print("Variable is distance")
+          print("Beginning parallel jags.data.array function")
           
-          # Intialize array
-          out <- array(numeric(0), 
-                       dim=c(max(orig), 
-                             max(t), 
-                             ceiling(max(d[,variable]))))
-          
-          print("Initialized out array")
-          
-          # Call C
-          # @useDynLib hmob optim_array_loop
-          #out <- .Call("optim_array_loop", d_path)
-          
-          # populate NA array with observed counts
-          for (i in 1:nrow(d)) {
+          if (variable == 'distance') {
                
-               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               o <- sort(unique(d$from))                # rows = i
+               t <- sort(unique(d[,time]))              # cols = j
+               v <- sort(unique(d[,variable]))          # 3D  = k
                
-               sel <- out[d[i, 'from'], 
-                          d[i, time], 
-                          ceiling(d[i, variable])]
+               registerDoParallel(cores=n.cores)
                
-               if (is.na(sel)) {
-                    
-                    out[d[i, 'from'], 
-                        d[i, time], 
-                        ceiling(d[i, variable])] <- d[i, 'count']
-                    
-               } else {
-                    
-                    out[d[i, 'from'], 
-                        d[i, time], 
-                        ceiling(d[i, variable])] <- sel + d[i, 'count']
+               # Initialize array
+               out <- array(NA, dim=c(length(o), length(t), ceiling(max(d[,variable]))))
+               
+               # get counts for observed route distances
+               tmp <- foreach(k = v, .combine=function(a, b) abind(a, b, along=3)) %:% 
+                    foreach(i = o, .combine='rbind', .multicombine=TRUE) %:% 
+                    foreach(j = t, .combine='c', .multicombine=TRUE) %dopar% {
+                         
+                         sum(d$from == i & d[,time] == j & d[,variable] <= k & d[,variable] > k - 1)
+                    }
+               
+               # populate NA array with observed counts
+               for (i in 1:length(o)) {
+                    dists <- unique(d[d$from == o[i], variable])
+                    for (j in dists) {
+                         out[i,,ceiling(j)] <- tmp[i,,which(v == j)]
+                    }
                }
-          }
-          
-          dimnames(out) <- list(origin=1:max(orig), 
-                                time=1:max(t), 
-                                distance=1:ceiling(max(d[,variable])))
-          
-     } else if (variable == 'duration') {
-          
-          print("Variable is duration")
-          
-          # Intialize array
-          out <- array(numeric(0), 
-                       dim=c(max(orig), 
-                             max(dest), 
-                             max(t), 
-                             ceiling(max(d[,variable]))))
-          
-          print("Initialized out array")
-          
-          # populate NA array with observed counts
-          for (i in 1:nrow(d)) {
                
-               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               dimnames(out) <- list(origin=o, time=t, distance=1:ceiling(max(d[,variable])))
                
-               sel <- out[d[i, 'from'], 
-                          d[i, 'to'], 
-                          d[i, time], 
-                          ceiling(d[i, variable])]
+          } else if (variable == 'duration') {
+               print("Variable is duration")
                
-               if (is.na(sel)) {
-                    
-                    out[d[i, 'from'], 
-                        d[i, 'to'], 
-                        d[i, time], 
-                        ceiling(d[i, variable])] <- d[i, 'count']
-                    
-               } else {
-                    
-                    out[d[i, 'from'], 
-                        d[i, 'to'], 
-                        d[i, time], 
-                        ceiling(d[i, variable])] <- sel + d[i, 'count']
+               orig <- sort(unique(d$from))                # rows = i
+               dest <- sort(unique(d$to))                  # cols = j
+               t <- sort(unique(d[,time]))                 # 3D = k
+               v <- sort(unique(d[,variable]))             # 4D = l
+               
+               registerDoParallel(cores=n.cores)
+               
+               # Intialize array
+               out <- array(numeric(0), dim=c(length(orig), length(dest), length(t), ceiling(max(d[,variable]))))
+               print("Initialized out array")
+               
+               # get counts for observed route distances
+               tmp <- foreach(l = v, .combine=function(a, b) abind(a, b, along=4)) %:%
+                    foreach(k = t, .combine=function(a, b) abind(a, b, along=3)) %:% 
+                    foreach(i = orig, .combine='rbind', .multicombine=TRUE) %:% 
+                    foreach(j = dest, .combine='c', .multicombine=TRUE) %dopar% {
+                         
+                         sum(d$from == i & d$to == j & d[,time] == k & d[,variable] == l)
+                    }
+               print("Finished foreach parallel part")
+               
+               # populate NA array with observed counts
+               for (i in 1:length(orig)) {
+                    for (j in 1:length(dest)) {
+                         durs <- unique(d[d$from == orig[i] & d$to == dest[j], variable])
+                         for (l in durs) {
+                              out[i,j,,l] <- tmp[i,j,,which(v == l)]
+                         }
+                    }
                }
+               
+               dimnames(out) <- list(origin=orig, destination=dest, time=t, duration=1:max(d[,variable]))
           }
+     }
+     
+     if (parallel == FALSE) {
           
-          dimnames(out) <- list(origin=1:max(orig), destination=1:max(dest), time=1:max(t), duration=1:ceiling(max(d[,variable])))
+          print("Beginning sequential jags.data.array")
+          
+          orig <- sort(unique(d$from))  
+          dest <- sort(unique(d$to)) # (duration only)
+          t <- sort(unique(d[,time]))                
+          v <- sort(unique(d[,variable]))   
+          
+          if (variable == 'distance') {
+               
+               print("Variable is distance")
+               
+               # Intialize array
+               out <- array(numeric(0), 
+                            dim=c(max(orig), 
+                                  max(t), 
+                                  ceiling(max(d[,variable]))))
+               
+               print("Initialized out array")
+               
+               # populate NA array with observed counts
+               for (i in 1:nrow(d)) {
+                    
+                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+                    
+                    sel <- out[d[i, 'from'], 
+                               d[i, time], 
+                               ceiling(d[i, variable])]
+                    
+                    if (is.na(sel)) {
+                         
+                         out[d[i, 'from'], 
+                             d[i, time], 
+                             ceiling(d[i, variable])] <- d[i, 'count']
+                         
+                    } else {
+                         
+                         out[d[i, 'from'], 
+                             d[i, time], 
+                             ceiling(d[i, variable])] <- sel + d[i, 'count']
+                    }
+               }
+               
+               dimnames(out) <- list(origin=1:max(orig), 
+                                     time=1:max(t), 
+                                     distance=1:ceiling(max(d[,variable])))
+               
+          } else if (variable == 'duration') {
+               
+               print("Variable is duration")
+               
+               # Intialize array
+               out <- array(numeric(0), 
+                            dim=c(max(orig), 
+                                  max(dest), 
+                                  max(t), 
+                                  ceiling(max(d[,variable]))))
+               
+               print("Initialized out array")
+               
+               # populate NA array with observed counts
+               for (i in 1:nrow(d)) {
+                    
+                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+                    
+                    sel <- out[d[i, 'from'], 
+                               d[i, 'to'], 
+                               d[i, time], 
+                               ceiling(d[i, variable])]
+                    
+                    if (is.na(sel)) {
+                         
+                         out[d[i, 'from'], 
+                             d[i, 'to'], 
+                             d[i, time], 
+                             ceiling(d[i, variable])] <- d[i, 'count']
+                         
+                    } else {
+                         
+                         out[d[i, 'from'], 
+                             d[i, 'to'], 
+                             d[i, time], 
+                             ceiling(d[i, variable])] <- sel + d[i, 'count']
+                    }
+               }
+               
+               dimnames(out) <- list(origin=1:max(orig), destination=1:max(dest), time=1:max(t), duration=1:ceiling(max(d[,variable])))
+          }
      }
      
      print("Finished jags.data.array")
