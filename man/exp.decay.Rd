@@ -17,7 +17,7 @@
 A scalar or vector of \eqn{N(y)}
 }
 \description{
-This function calculates exponential decay of a data value \code{y} (in this case duration)
+This function calculates exponential decay of a data value \code{y} (e.g. trip duration)
 given the intercept \eqn{\beta} and decay rate \eqn{\lambda} parameters using the functional form:
 \eqn{N(y) = \beta exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
 }

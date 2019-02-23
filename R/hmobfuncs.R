@@ -865,12 +865,11 @@ jags.data.array.route.level <- function(x,              # output from jags.data.
 ##' Proportion of individuals remaining for full epidemic generation
 ##'
 ##' This function calculates the proportion of individuals that remain a location for
-##' all of epidemic generation $n$. The value is represented by the variable \eqn{p_{jt}^{g(n)}}, which
+##' all of epidemic generation \eqn{n}. The value is represented by the variable \eqn{p_jt}, which
 ##' is defined as the effective probability if individuals that stay for a full epidemic generation 
-##' when they travel to destination \eqn{j} at time \eqn{t}:
-##' \deqn{
-##' p_{jt}^{g(n)} = \Pr(\text{remaining for all of n^{th} epidemic generation} \mid \text{generation time})
-##' }
+##' when they travel to destination \eqn{j} at time \eqn{t}:\cr
+##' \cr
+##' \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
 ##' 
 ##' @param d 4-dimensional data array produced by the \code{\link{jags.data.array}} function \emph{or} the \code{duration.array.month.level} data object in the \pkg{hmobdata} package
 ##' @param gen.t the time interval in days used to define the epidemic generation
