@@ -929,3 +929,29 @@ get.beta.params <- function(m, v) {
      a <- ((1-m) / v - 1/m) * m^2 
      list(a=a, b=a * (1 / m-1))
 }
+
+##' Exponential decay function
+##'
+##' This function calculates exponential decay of a data value \code{y} (e.g. trip duration)
+##' given the intercept \eqn{\beta} and decay rate \eqn{\lambda} parameters using the functional form:
+##' \eqn{N(y) = \beta exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
+##' 
+##' @param beta intercept (baseline number of expected trips at \eqn{y=0})
+##' @param lambda decay rate
+##' @param y a scalar or vector giving the data value(s) (e.g. trip duration)
+##' 
+##' @return A scalar or vector of \eqn{N(y)}
+##' 
+##' @author John Giles
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+exp.decay <- function(beta,       # intercept (baseline number of expected trips at \eqn{y=0})
+                      lambda,     # decay rate parameter
+                      y           # data value duration (integer representing days)
+) {
+     beta * exp(-lambda*y)
+}

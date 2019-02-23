@@ -26,7 +26,8 @@ p_{jt}^{g(n)} = \Pr(\text{remaining for all of n^{th} epidemic generation} \mid 
 }
 }
 \seealso{
-Other simulation: \code{\link{get.beta.params}}
+Other simulation: \code{\link{exp.decay}},
+  \code{\link{get.beta.params}}
 }
 \author{
 John Giles
