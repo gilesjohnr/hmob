@@ -948,9 +948,9 @@ get.beta.params <- function(m, v) {
 ##' @export
 ##' 
 
-exp.decay <- function(beta,       # intercept (baseline number of expected trips at \eqn{y=0})
-                      lambda,     # decay rate parameter
-                      y           # data value duration (integer representing days)
+decay.func <- function(beta,       # intercept (baseline number of expected trips at \eqn{y=0})
+                       lambda,     # decay rate parameter
+                       y           # data value duration (integer representing days)
 ) {
      beta * exp(-lambda*y)
 }

@@ -18,14 +18,14 @@ A 4-dimensional array with values between 0 and 1
 }
 \description{
 This function calculates the proportion of individuals that remain a location for
-all of epidemic generation \eqn{n}. The value is represented by the variable \eqn{p_{jt}^{g(n)}}, which
+all of epidemic generation \eqn{n}. The value is represented by the variable \eqn{p_jt}, which
 is defined as the effective probability if individuals that stay for a full epidemic generation 
 when they travel to destination \eqn{j} at time \eqn{t}:\cr
 \cr
 \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
 }
 \seealso{
-Other simulation: \code{\link{exp.decay}},
+Other simulation: \code{\link{decay.func}},
   \code{\link{get.beta.params}}
 }
 \author{
