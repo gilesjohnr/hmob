@@ -31,7 +31,8 @@ The difference in array dimensions occurs because the destination dimension must
 perform counts of trip distance, leaving only the origin, time, and distance counts.
 }
 \seealso{
-Other model processing: \code{\link{jags.data.array.route.level}}
+Other model processing: \code{\link{jags.data.array.pop.level}},
+  \code{\link{jags.data.array.route.level}}
 }
 \author{
 John Giles

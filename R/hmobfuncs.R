@@ -862,6 +862,46 @@ jags.data.array.route.level <- function(x,              # output from jags.data.
      return(x)
 }
 
+##' Reduce a jags.data.array object to population-level
+##' 
+##' This function reduces the output from the \code{\link{jags.data.array}} function---which contains data for the
+##' month-level---to a vector representing the variable across all routes and months. The population-level vector contains the mean value across all
+##' observed values of the variable.
+##' 
+##' @param x Month-level output from the \code{\link{jags.data.array}} function
+##' @param variable The variable in the data object (expects either \code{'distance'} or \code{'duration'})
+##' 
+##' @return vector
+##' 
+##' @author John Giles
+##'
+##' @family model processing
+##' 
+##' @export
+##' 
+
+jags.data.array.pop.level <- function(x,              # output from jags.data.array function
+                                      variable        # 'distance' or 'duration'
+){
+     
+     if (variable == 'distance') {
+          
+          x <- apply(distance.array.month.level, 
+                     3, 
+                     function(x) as.integer(round(mean(x, na.rm=TRUE))))
+          
+     } else if (variable == 'duration') {
+          
+          x <- apply(x, 
+                     4, 
+                     function(x) as.integer(round(mean(x, na.rm=TRUE))))
+          
+     }
+     
+     x[is.nan(x)] <- NA
+     return(x)
+}
+
 ##' Proportion of individuals remaining for full epidemic generation
 ##'
 ##' This function calculates the proportion of individuals that remain a location for
