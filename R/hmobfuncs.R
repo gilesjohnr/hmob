@@ -865,8 +865,8 @@ jags.data.array.route.level <- function(x,              # output from jags.data.
 ##' Reduce a jags.data.array object to population-level
 ##' 
 ##' This function reduces the output from the \code{\link{jags.data.array}} function---which contains data for the
-##' month-level---to a vector representing the variable across all routes and months. The population-level vector contains the mean value across all
-##' observed values of the variable.
+##' month-level---to a vector giving the population mean. The population-level vector contains the observed mean 
+##' value of the response variable across all routes and months.
 ##' 
 ##' @param x Month-level output from the \code{\link{jags.data.array}} function
 ##' @param variable The variable in the data object (expects either \code{'distance'} or \code{'duration'})
