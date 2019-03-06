@@ -20,7 +20,8 @@ month-level---to a route-level data array. The route-level array contains the me
 months.
 }
 \seealso{
-Other model processing: \code{\link{jags.data.array.pop.level}},
+Other model processing: \code{\link{get.param.vals}},
+  \code{\link{jags.data.array.pop.level}},
   \code{\link{jags.data.array}}
 }
 \author{

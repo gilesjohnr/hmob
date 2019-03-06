@@ -20,7 +20,8 @@ month-level---to a vector giving the population mean. The population-level vecto
 value of the response variable across all routes and months.
 }
 \seealso{
-Other model processing: \code{\link{jags.data.array.route.level}},
+Other model processing: \code{\link{get.param.vals}},
+  \code{\link{jags.data.array.route.level}},
   \code{\link{jags.data.array}}
 }
 \author{

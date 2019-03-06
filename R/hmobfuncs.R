@@ -902,6 +902,71 @@ jags.data.array.pop.level <- function(x,              # output from jags.data.ar
      return(x)
 }
 
+##' Get posterior parameter estimates from a model object
+##' 
+##' A function to build a matrix or dataframe of the mean and standard deviation of the posterior distribution 
+##' \strong{for each i to j route}.
+##' 
+##' @param n.districts Number of districts in model
+##' @param name Name of the parameter (default = \code{lambda_1})
+##' @param stats Expects statistics output of \code{\link{coda::summary}} function. If model out put is a \code{runjags} 
+##' object, this can be given by: \code{summary(as.mcmc.list(out))$statistics}
+##' @param type Return a matrix or dataframe (default = 'matrix')
+##' @param n.cores Number of cores to use in parallel computation
+##' 
+##' @return A list containing two matrices named \code{mean} and \code{sd}
+##' 
+##' @author John Giles
+##'
+##' @family model processing
+##' 
+##' @export
+##' 
+
+get.param.vals <- function(
+     n.districts,          # number of districts
+     name='lambda_1',      # name of variable
+     stats,                # expects statistics output of coda::summary function
+     type='matrix',        # 'matrix' or 'dataframe' format to return parameter values (default = 'matrix')
+     n.cores=2
+) {
+     
+     registerDoParallel(cores=n.cores)
+     
+     if (type == 'dataframe') {
+          out <- foreach(i=1:n.districts, .combine='rbind') %:%
+               foreach(j=1:n.districts, .combine='rbind') %dopar% {
+                    
+                    data.frame(name=paste(name, '[', i, ',', j, ']', sep=''),
+                               from=i,
+                               to=j,
+                               mean=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean'],
+                               sd=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD'])
+               }
+     }
+     
+     if (type == 'matrix') {
+          
+          out.mean <- foreach(i=1:n.districts, .combine='rbind') %:%
+               foreach(j=1:n.districts, .combine='c') %dopar% {
+                    
+                    stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean']
+               }
+          
+          out.sd <- foreach(i=1:n.districts, .combine='rbind') %:%
+               foreach(j=1:n.districts, .combine='c') %dopar% {
+                    
+                    stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD']
+               }
+          
+          row.names(out.mean) <- row.names(out.sd) <- NULL
+          out <- list(mean=out.mean, sd=out.sd)
+     }
+     
+     return(out)     
+}
+
+
 ##' Proportion of individuals remaining for full epidemic generation
 ##'
 ##' This function calculates the proportion of individuals that remain a location for
