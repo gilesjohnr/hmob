@@ -904,17 +904,21 @@ jags.data.array.pop.level <- function(x,              # output from jags.data.ar
 
 ##' Get posterior parameter estimates from a model object
 ##' 
-##' A function to build a matrix or dataframe of the mean and standard deviation of the posterior distribution 
-##' \strong{for each i to j route}.
+##' A function to build a matrix or dataframe of parameter estimates in a \code{runjags} or \code{coda} model object.
+##' The function gets the mean and standard deviation of the estimated posterior distribution 
+##' for route-level (\eqn{ij}) or month-level (\eqn{ijt}).
 ##' 
 ##' @param n.districts Number of districts in model
+##' @param n.t Number of months or other time inteval (default = 12)
 ##' @param name Name of the parameter (default = \code{lambda_1})
+##' @param level The hierarchical level of the model that correpsonds to \code{name} (e.g. 'route' or 'month')
 ##' @param stats Expects statistics output of \code{\link{coda::summary}} function. If model out put is a \code{runjags} 
 ##' object, this can be given by: \code{summary(as.mcmc.list(out))$statistics}
 ##' @param type Return a matrix or dataframe (default = 'matrix')
 ##' @param n.cores Number of cores to use in parallel computation
 ##' 
-##' @return A list containing two matrices named \code{mean} and \code{sd}
+##' @return If level = 'route', a list containing two matrices named \code{mean} and \code{sd}. 
+##' If level = 'month', a list containing two 3-dimensional arrays named \code{mean} and \code{sd}.
 ##' 
 ##' @author John Giles
 ##'
@@ -925,7 +929,9 @@ jags.data.array.pop.level <- function(x,              # output from jags.data.ar
 
 get.param.vals <- function(
      n.districts,          # number of districts
+     n.t=12,               # number of months or other time inteval
      name='lambda_1',      # name of variable
+     level='route',
      stats,                # expects statistics output of coda::summary function
      type='matrix',        # 'matrix' or 'dataframe' format to return parameter values (default = 'matrix')
      n.cores=2
@@ -933,34 +939,77 @@ get.param.vals <- function(
      
      registerDoParallel(cores=n.cores)
      
-     if (type == 'dataframe') {
-          out <- foreach(i=1:n.districts, .combine='rbind') %:%
-               foreach(j=1:n.districts, .combine='rbind') %dopar% {
-                    
-                    data.frame(name=paste(name, '[', i, ',', j, ']', sep=''),
-                               from=i,
-                               to=j,
-                               mean=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean'],
-                               sd=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD'])
-               }
-     }
-     
-     if (type == 'matrix') {
+     if (level == 'route') {
+          if (type == 'dataframe') {
+               out <- foreach(i=1:n.districts, .combine='rbind') %:%
+                    foreach(j=1:n.districts, .combine='rbind') %dopar% {
+                         
+                         data.frame(name=paste(name, '[', i, ',', j, ']', sep=''),
+                                    from=i,
+                                    to=j,
+                                    mean=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean'],
+                                    sd=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD'])
+                    }
+          }
           
-          out.mean <- foreach(i=1:n.districts, .combine='rbind') %:%
-               foreach(j=1:n.districts, .combine='c') %dopar% {
-                    
-                    stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean']
-               }
+          if (type == 'matrix') {
+               
+               out.mean <- foreach(i=1:n.districts, .combine='rbind') %:%
+                    foreach(j=1:n.districts, .combine='c') %dopar% {
+                         
+                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean']
+                    }
+               
+               out.sd <- foreach(i=1:n.districts, .combine='rbind') %:%
+                    foreach(j=1:n.districts, .combine='c') %dopar% {
+                         
+                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD']
+                    }
+               
+               row.names(out.mean) <- row.names(out.sd) <- NULL
+               out <- list(mean=out.mean, sd=out.sd)
+          }
+     } else if (level == 'month') {
+          if (type == 'dataframe') {
+               
+               out <- foreach(t = 1:n.t, .combine='rbind') %:% 
+                    foreach(i=1:n.districts, .combine='rbind') %:%
+                    foreach(j=1:n.districts, .combine='rbind') %dopar% {
+                         
+                         sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
+                         
+                         data.frame(name=sel,
+                                    from=i,
+                                    to=j,
+                                    month=t,
+                                    mean=stats[which(row.names(stats) == sel), 'Mean'],
+                                    sd=stats[which(row.names(stats) == sel), 'SD'])
+                    }
+          }
           
-          out.sd <- foreach(i=1:n.districts, .combine='rbind') %:%
-               foreach(j=1:n.districts, .combine='c') %dopar% {
-                    
-                    stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD']
-               }
-          
-          row.names(out.mean) <- row.names(out.sd) <- NULL
-          out <- list(mean=out.mean, sd=out.sd)
+          if (type == 'matrix') {
+               
+               out.mean <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
+                    foreach(i = 1:n.districts, .combine='rbind', .multicombine=TRUE) %:% 
+                    foreach(j = 1:n.districts, .combine='c', .multicombine=TRUE) %dopar% {
+                         
+                         sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
+                         
+                         stats[which(row.names(stats) == sel), 'Mean']
+                    }
+               
+               out.sd <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
+                    foreach(i = 1:n.districts, .combine='rbind', .multicombine=TRUE) %:% 
+                    foreach(j = 1:n.districts, .combine='c', .multicombine=TRUE) %dopar% {
+                         
+                         sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
+                         
+                         stats[which(row.names(stats) == sel), 'SD']
+                    }
+               
+               dimnames(out.mean) <- dimnames(out.sd) <- NULL
+               out <- list(mean=out.mean, sd=out.sd)
+          }
      }
      
      return(out)     

@@ -4,13 +4,17 @@
 \alias{get.param.vals}
 \title{Get posterior parameter estimates from a model object}
 \usage{
-get.param.vals(n.districts, name = "lambda_1", stats, type = "matrix",
-  n.cores = 2)
+get.param.vals(n.districts, n.t = 12, name = "lambda_1",
+  level = "route", stats, type = "matrix", n.cores = 2)
 }
 \arguments{
 \item{n.districts}{Number of districts in model}
 
+\item{n.t}{Number of months or other time inteval (default = 12)}
+
 \item{name}{Name of the parameter (default = \code{lambda_1})}
+
+\item{level}{The hierarchical level of the model that correpsonds to \code{name} (e.g. 'route' or 'month')}
 
 \item{stats}{Expects statistics output of \code{\link{coda::summary}} function. If model out put is a \code{runjags} 
 object, this can be given by: \code{summary(as.mcmc.list(out))$statistics}}
@@ -20,11 +24,13 @@ object, this can be given by: \code{summary(as.mcmc.list(out))$statistics}}
 \item{n.cores}{Number of cores to use in parallel computation}
 }
 \value{
-A list containing two matrices named \code{mean} and \code{sd}
+If level = 'route', a list containing two matrices named \code{mean} and \code{sd}. 
+If level = 'month', a list containing two 3-dimensional arrays named \code{mean} and \code{sd}.
 }
 \description{
-A function to build a matrix or dataframe of the mean and standard deviation of the posterior distribution 
-\strong{for each i to j route}.
+A function to build a matrix or dataframe of parameter estimates in a \code{runjags} or \code{coda} model object.
+The function gets the mean and standard deviation of the estimated posterior distribution 
+for route-level (\eqn{ij}) or month-level (\eqn{ijt}).
 }
 \seealso{
 Other model processing: \code{\link{jags.data.array.pop.level}},
