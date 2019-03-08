@@ -627,7 +627,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @param time The temporal interal used to construct the array (default = \code{'month'})
 ##' @param variable Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}
 ##' @param gen.t The length of generation time (in days) by which to aggregate trip durations
-##' @param parallel Logical indicating whether to execute in parallel (default = 1)
+##' @param parallel Logical indicating whether to execute in parallel
 ##' @param n.cores Number of cores to use when \code{parallel = TRUE} (default = NULL, which uses half available cores)
 ##' @return A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}
 ##' 
@@ -641,7 +641,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 jags.data.array <- function(d,                            # data
                             time='month',                 # temporal interval
                             variable='duration',          # character string giving the response variable: 'distance' or 'duration'
-                            gen.t=1,                      # length of epidemic generation in days
+                            gen.t=NULL,                   # length of epidemic generation in days
                             parallel=FALSE,               # whether or not to execute in parallel
                             n.cores=NULL
 ) {
@@ -1086,10 +1086,10 @@ get.beta.params <- function(m, v) {
 ##' Exponential decay function
 ##'
 ##' This function calculates exponential decay of a data value \code{y} (e.g. trip duration)
-##' given the intercept \eqn{\beta} and decay rate \eqn{\lambda} parameters using the functional form:
-##' \eqn{N(y) = \beta exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
+##' given the intercept \eqn{\alpha} and decay rate \eqn{\lambda} parameters using the functional form:
+##' \eqn{N(y) = \alpha exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
 ##' 
-##' @param beta intercept (baseline number of expected trips at \eqn{y=0})
+##' @param alpha intercept (baseline number of expected trips at \eqn{y=0})
 ##' @param lambda decay rate
 ##' @param y a scalar or vector giving the data value(s) (e.g. trip duration)
 ##' 
@@ -1102,9 +1102,9 @@ get.beta.params <- function(m, v) {
 ##' @export
 ##' 
 
-decay.func <- function(beta,       # intercept (baseline number of expected trips at \eqn{y=0})
+decay.func <- function(alpha,       # intercept (baseline number of expected trips at \eqn{y=0})
                        lambda,     # decay rate parameter
                        y           # data value duration (integer representing days)
 ) {
-     beta * exp(-lambda*y)
+     alpha * exp(-lambda*y)
 }
