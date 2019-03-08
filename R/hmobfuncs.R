@@ -646,7 +646,7 @@ jags.data.array <- function(d,                            # data
                             n.cores=NULL
 ) {
      
-     if (gen.t < 1) stop('Generation time gen.t must be at least 1')
+     if (is.null(gen.t) == FALSE & gen.t < 1) stop('Generation time gen.t must be at least 1')
      
      if (parallel == TRUE) {
           
