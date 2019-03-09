@@ -626,7 +626,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @param d Longform data with metadata attached
 ##' @param time The temporal interal used to construct the array (default = \code{'month'})
 ##' @param variable Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}
-##' @param gen.t The length of generation time (in days) by which to aggregate trip durations
+##' @param agg.int The interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km.
 ##' @param parallel Logical indicating whether to execute in parallel
 ##' @param n.cores Number of cores to use when \code{parallel = TRUE} (default = NULL, which uses half available cores)
 ##' @return A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}
@@ -655,12 +655,15 @@ jags.data.array <- function(d,                            # data
                
                print("Variable is distance")
                
+               n.int <- floor(max(d[,variable])/agg.int)
+               
                o <- sort(unique(d$from))                # rows = i
                t <- sort(unique(d[,time]))              # cols = j
                v <- sort(unique(d[,variable]))          # 3D  = k
+               g <- 1:n.int                             # Distance intervals to aggregate
                
                # get counts for observed route distances
-               out <- foreach(k = v, .combine=function(a, b) abind(a, b, along=3)) %:% 
+               out <- foreach(k = g, .combine=function(a, b) abind(a, b, along=3)) %:% 
                     foreach(i = o, .combine='rbind', .multicombine=TRUE) %:% 
                     foreach(j = t, .combine='c', .multicombine=TRUE) %dopar% {
                          
@@ -681,7 +684,7 @@ jags.data.array <- function(d,                            # data
                
                print("Variable is duration")
                
-               n.gen <- floor(max(d[,variable])/gen.t)
+               n.gen <- floor(max(d[,variable])/agg.int)
                
                orig <- sort(unique(d$from))                # rows = i origins
                dest <- sort(unique(d$to))                  # cols = j destinations

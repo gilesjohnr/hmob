@@ -5,7 +5,7 @@
 \title{Build JAGS data array}
 \usage{
 jags.data.array(d, time = "month", variable = "duration",
-  gen.t = NULL, parallel = FALSE, n.cores = NULL)
+  agg.int = 1, parallel = FALSE, n.cores = NULL)
 }
 \arguments{
 \item{d}{Longform data with metadata attached}
@@ -14,7 +14,7 @@ jags.data.array(d, time = "month", variable = "duration",
 
 \item{variable}{Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}}
 
-\item{gen.t}{The length of generation time (in days) by which to aggregate trip durations}
+\item{agg.int}{The interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km.}
 
 \item{parallel}{Logical indicating whether to execute in parallel}
 
