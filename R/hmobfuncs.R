@@ -646,38 +646,34 @@ jags.data.array <- function(d,                            # data
                             n.cores=NULL
 ) {
      
-     if (is.null(gen.t) == FALSE & gen.t < 1) stop('Generation time gen.t must be at least 1')
-     
      if (parallel == TRUE) {
           
           print("Beginning parallel jags.data.array function")
+          registerDoParallel(cores=n.cores)
           
           if (variable == 'distance') {
+               
+               print("Variable is distance")
                
                o <- sort(unique(d$from))                # rows = i
                t <- sort(unique(d[,time]))              # cols = j
                v <- sort(unique(d[,variable]))          # 3D  = k
-               
-               registerDoParallel(cores=n.cores)
-               
-               # Initialize array
-               out <- array(NA, dim=c(length(o), length(t), ceiling(max(d[,variable]))))
                
                # get counts for observed route distances
                tmp <- foreach(k = v, .combine=function(a, b) abind(a, b, along=3)) %:% 
                     foreach(i = o, .combine='rbind', .multicombine=TRUE) %:% 
                     foreach(j = t, .combine='c', .multicombine=TRUE) %dopar% {
                          
-                         sum(d$from == i & d[,time] == j & d[,variable] <= k & d[,variable] > k - 1)
+                         x <- sum(d[d$from == i 
+                                    & d[,time] == j 
+                                    & d[,variable] <= k 
+                                    & d[,variable] > k - 1, 
+                                    'count'],
+                                  na.rm=TRUE)
+                         
+                         if (x == 0) x <- NA
+                         x
                     }
-               
-               # populate NA array with observed counts
-               for (i in 1:length(o)) {
-                    dists <- unique(d[d$from == o[i], variable])
-                    for (j in dists) {
-                         out[i,,ceiling(j)] <- tmp[i,,which(v == j)]
-                    }
-               }
                
                dimnames(out) <- list(origin=o, time=t, distance=1:ceiling(max(d[,variable])))
                
@@ -691,8 +687,6 @@ jags.data.array <- function(d,                            # data
                dest <- sort(unique(d$to))                  # cols = j destinations
                t <- sort(unique(d[,time]))                 # 3D = k months
                g <- 1:n.gen                                # 4D  = l generations
-               
-               registerDoParallel(cores=n.cores)
                
                out <- foreach(l = g, .combine=function(a, b) abind(a, b, along=4)) %:%
                     foreach(k = t, .combine=function(a, b) abind(a, b, along=3)) %:% 
@@ -714,14 +708,16 @@ jags.data.array <- function(d,                            # data
                print("Finished foreach parallel part")
                
                dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=1:n.gen)
+          } else if (variable='trips') {
+               
+               
+               
           }
      }
      
      if (parallel == FALSE) {
           
           print("Beginning sequential jags.data.array")
-          
-          
           
           if (variable == 'distance') {
                
