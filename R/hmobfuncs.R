@@ -641,7 +641,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 jags.data.array <- function(d,                            # data
                             time='month',                 # temporal interval
                             variable='duration',          # character string giving the response variable: 'distance' or 'duration'
-                            gen.t=NULL,                   # length of epidemic generation in days
+                            agg.int=1,                    # aggregation interval (for duration: length of epidemic generation in days, for distance it is number of km)
                             parallel=FALSE,               # whether or not to execute in parallel
                             n.cores=NULL
 ) {
@@ -660,14 +660,14 @@ jags.data.array <- function(d,                            # data
                v <- sort(unique(d[,variable]))          # 3D  = k
                
                # get counts for observed route distances
-               tmp <- foreach(k = v, .combine=function(a, b) abind(a, b, along=3)) %:% 
+               out <- foreach(k = v, .combine=function(a, b) abind(a, b, along=3)) %:% 
                     foreach(i = o, .combine='rbind', .multicombine=TRUE) %:% 
                     foreach(j = t, .combine='c', .multicombine=TRUE) %dopar% {
                          
                          x <- sum(d[d$from == i 
                                     & d[,time] == j 
-                                    & d[,variable] <= k 
-                                    & d[,variable] > k - 1, 
+                                    & d[,variable] > (k*agg.int - agg.int) 
+                                    & d[,variable] <= k*agg.int, 
                                     'count'],
                                   na.rm=TRUE)
                          
@@ -696,8 +696,8 @@ jags.data.array <- function(d,                            # data
                          x <- sum(d[d$from == i 
                                     & d$to == j 
                                     & d[,time] == k  
-                                    & d[,variable] > (l*gen.t - gen.t) 
-                                    & d[,variable] <= l*gen.t, 
+                                    & d[,variable] > (l*agg.int - agg.int) 
+                                    & d[,variable] <= l*agg.int, 
                                     'count'], 
                                   na.rm=TRUE)
                          
