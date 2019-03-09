@@ -708,10 +708,6 @@ jags.data.array <- function(d,                            # data
                print("Finished foreach parallel part")
                
                dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=1:n.gen)
-          } else if (variable='trips') {
-               
-               
-               
           }
      }
      
