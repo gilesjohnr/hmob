@@ -326,7 +326,7 @@ trip.map <- function(a, # origin district (can take integer ID or character name
           plot(rgeos::gSimplify(adm, tol=tol, topologyPreserve=TRUE), border='grey60', lwd=1.25)
           
           # Add origin
-          plot(rgeos::gSimplify(a, tol=tol, topologyPreserve=TRUE), col='grey35', add=T)
+          plot(rgeos::gSimplify(a, tol=tol, topologyPreserve=TRUE), col=rgb(0,0,1, alpha=0.3), add=T)
           plot(rgeos::gCentroid(a), pch=24, cex=1.75, bg="blue", lwd=2, add=T)
           
      } else {
