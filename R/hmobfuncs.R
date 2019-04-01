@@ -727,7 +727,7 @@ jags.data.array <- function(d,                            # data
                print("Variable is distance")
                
                # Intialize array
-               out <- array(numeric(0), 
+               out <- array(numeric(), 
                             dim=c(max(orig), 
                                   max(t), 
                                   ceiling(max(d[,variable]))))
@@ -773,7 +773,7 @@ jags.data.array <- function(d,                            # data
                g <- 1:n.gen
                
                # Intialize array
-               out <- array(numeric(0), 
+               out <- array(numeric(), 
                             dim=c(max(orig), 
                                   max(dest), 
                                   max(t), 
