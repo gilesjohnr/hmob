@@ -841,7 +841,7 @@ jags.data.array.route.level <- function(x,              # output from jags.data.
      
      if (variable == 'distance') {
           
-          x <- apply(distance.array.month.level, 
+          x <- apply(x, 
                      c(1,3), 
                      function(x) as.integer(round(mean(x, na.rm=TRUE))))
           
@@ -881,7 +881,7 @@ jags.data.array.pop.level <- function(x,              # output from jags.data.ar
      
      if (variable == 'distance') {
           
-          x <- apply(distance.array.month.level, 
+          x <- apply(x, 
                      3, 
                      function(x) as.integer(round(mean(x, na.rm=TRUE))))
           
