@@ -648,14 +648,20 @@ jags.data.array <- function(d,                            # data
      
      if (parallel == TRUE) {
           
-          print("Beginning parallel jags.data.array function")
+          print("Beginning parallel jags.data.array")
           registerDoParallel(cores=n.cores)
+          
+          options(mc.cores=n.cores)
+          clust <- makeForkCluster()
+          registerDoParallel(clust) # register as foreach back end
+          print(getDoParRegistered()); print(getDoParWorkers()) # check
+          print("Cluster allocated")
           
           if (variable == 'distance') {
                
                print("Variable is distance")
                
-               n.int <- floor(max(d[,variable])/agg.int)
+               n.int <- ceiling(max(d[,variable])/agg.int)
                
                o <- sort(unique(d$from))                # rows = i
                t <- sort(unique(d[,time]))              # cols = j
@@ -678,13 +684,15 @@ jags.data.array <- function(d,                            # data
                          x
                     }
                
-               dimnames(out) <- list(origin=o, time=t, distance=1:ceiling(max(d[,variable])))
+               print("Finished foreach parallel part")
+               
+               dimnames(out) <- list(origin=o, time=t, distance=g)
                
           } else if (variable == 'duration') {
                
                print("Variable is duration")
                
-               n.gen <- floor(max(d[,variable])/agg.int)
+               n.gen <- ceiling(max(d[,variable])/agg.int)
                
                orig <- sort(unique(d$from))                # rows = i origins
                dest <- sort(unique(d$to))                  # cols = j destinations
@@ -710,7 +718,7 @@ jags.data.array <- function(d,                            # data
                
                print("Finished foreach parallel part")
                
-               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=1:n.gen)
+               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
           }
      }
      
@@ -720,17 +728,19 @@ jags.data.array <- function(d,                            # data
           
           if (variable == 'distance') {
                
+               n.int <- ceiling(max(d[,variable])/agg.int)
+               
                orig <- sort(unique(d$from))
-               t <- sort(unique(d[,time]))                
-               v <- sort(unique(d[,variable])) 
+               t <- sort(unique(d[,time]))       
+               ints <- 1:n.int
                
                print("Variable is distance")
                
                # Intialize array
                out <- array(numeric(), 
-                            dim=c(max(orig), 
-                                  max(t), 
-                                  ceiling(max(d[,variable]))))
+                            dim=c(length(orig), 
+                                  length(t), 
+                                  n.int))
                
                print("Initialized out array")
                
@@ -739,33 +749,31 @@ jags.data.array <- function(d,                            # data
                     
                     print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
                     
-                    sel <- out[d[i, 'from'], 
-                               d[i, time], 
-                               ceiling(d[i, variable])]
+                    sel <- out[which(orig == d[i, 'from']), 
+                               which(t == d[i, time]), 
+                               ceiling(d[i, variable]/agg.int)]
                     
                     if (is.na(sel)) {
                          
-                         out[d[i, 'from'], 
-                             d[i, time], 
-                             ceiling(d[i, variable])] <- d[i, 'count']
+                         out[which(orig == d[i, 'from']), 
+                             which(t == d[i, time]), 
+                             ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
                          
                     } else {
                          
-                         out[d[i, 'from'], 
-                             d[i, time], 
-                             ceiling(d[i, variable])] <- sel + d[i, 'count']
+                         out[which(orig == d[i, 'from']), 
+                             which(t == d[i, time]), 
+                             ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
                     }
                }
                
-               dimnames(out) <- list(origin=1:max(orig), 
-                                     time=1:max(t), 
-                                     distance=1:ceiling(max(d[,variable])))
+               dimnames(out) <- list(origin=orig, time=t, distance=1:ceiling(max(d[,variable])))
                
           } else if (variable == 'duration') {
                
                print("Variable is duration")
                
-               n.gen <- floor(max(d[,variable])/gen.t)
+               n.gen <- ceiling(max(d[,variable])/agg.int)
                
                orig <- sort(unique(d$from))  
                dest <- sort(unique(d$to))
@@ -774,9 +782,9 @@ jags.data.array <- function(d,                            # data
                
                # Intialize array
                out <- array(numeric(), 
-                            dim=c(max(orig), 
-                                  max(dest), 
-                                  max(t), 
+                            dim=c(length(orig), 
+                                  length(dest), 
+                                  length(t), 
                                   n.gen))
                
                print("Initialized out array")
@@ -788,28 +796,28 @@ jags.data.array <- function(d,                            # data
                     
                     if (d[i, variable] > gen.t*n.gen) (next)
                     
-                    sel <- out[d[i, 'from'], 
-                               d[i, 'to'], 
-                               d[i, time],
-                               ceiling(d[i,variable]/gen.t)]
+                    sel <- out[which(orig == d[i, 'from']), 
+                               which(dest == d[i, 'to']), 
+                               which(t == d[i, time]),
+                               ceiling(d[i, variable]/agg.int)]
                     
                     if (is.na(sel)) {
                          
-                         out[d[i, 'from'], 
-                             d[i, 'to'], 
-                             d[i, time], 
-                             ceiling(d[i, variable]/gen.t)] <- d[i, 'count']
+                         out[which(orig == d[i, 'from']), 
+                             which(dest == d[i, 'to']), 
+                             which(t == d[i, time]),
+                             ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
                          
                     } else {
                          
-                         out[d[i, 'from'], 
-                             d[i, 'to'], 
-                             d[i, time], 
-                             ceiling(d[i, variable]/gen.t)] <- sel + d[i, 'count']
+                         out[which(orig == d[i, 'from']), 
+                             which(dest == d[i, 'to']), 
+                             which(t == d[i, time]),
+                             ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
                     }
                }
                
-               dimnames(out) <- list(origin=1:max(orig), destination=1:max(dest), time=1:max(t), generation=1:n.gen)
+               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
           }
      }
      
