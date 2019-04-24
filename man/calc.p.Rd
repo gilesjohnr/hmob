@@ -26,7 +26,8 @@ when they travel to destination \eqn{j} at time \eqn{t}:\cr
 }
 \seealso{
 Other simulation: \code{\link{decay.func}},
-  \code{\link{get.beta.params}}
+  \code{\link{get.beta.params}},
+  \code{\link{sim.connectivity}}
 }
 \author{
 John Giles

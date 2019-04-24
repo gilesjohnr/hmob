@@ -29,7 +29,7 @@ If level = 'month', a list containing two 3-dimensional arrays named \code{mean}
 }
 \description{
 A function to build a matrix or dataframe of parameter estimates in a \code{runjags} or \code{coda} model object.
-The function gets the mean and standard deviation of the estimated posterior distribution 
+The function gets the mean, median, standard deviation, and lower and upper 95 % confidence intervals of the estimated posterior distribution 
 for route-level (\eqn{ij}) or month-level (\eqn{ijt}).
 }
 \seealso{

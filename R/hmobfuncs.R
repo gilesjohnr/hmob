@@ -820,7 +820,7 @@ jags.data.array <- function(d,                            # data
                     
                     print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
                     
-                    if (d[i, variable] > gen.t*n.gen) (next)
+                    if (d[i, variable] > agg.int*n.gen) (next)
                     
                     sel <- out[which(orig == d[i, 'from']), 
                                which(dest == d[i, 'to']), 
@@ -975,7 +975,7 @@ jags.data.array.pop.level <- function(x,              # output from jags.data.ar
 ##' Get posterior parameter estimates from a model object
 ##' 
 ##' A function to build a matrix or dataframe of parameter estimates in a \code{runjags} or \code{coda} model object.
-##' The function gets the mean and standard deviation of the estimated posterior distribution 
+##' The function gets the mean, median, standard deviation, and lower and upper 95 % confidence intervals of the estimated posterior distribution 
 ##' for route-level (\eqn{ij}) or month-level (\eqn{ijt}).
 ##' 
 ##' @param n.districts Number of districts in model
@@ -1018,7 +1018,10 @@ get.param.vals <- function(
                                     from=i,
                                     to=j,
                                     mean=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean'],
-                                    sd=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD'])
+                                    median=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Median'],
+                                    sd=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD'],
+                                    lo95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Lower95'],
+                                    hi95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Upper95'])
                     }
           }
           
@@ -1030,14 +1033,32 @@ get.param.vals <- function(
                          stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean']
                     }
                
+              out.median <- foreach(i=1:n.districts, .combine='rbind') %:%
+                    foreach(j=1:n.districts, .combine='c') %dopar% {
+                         
+                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Median']
+                    } 
+               
                out.sd <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
                          stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD']
                     }
                
-               row.names(out.mean) <- row.names(out.sd) <- NULL
-               out <- list(mean=out.mean, sd=out.sd)
+               out.lo95 <- foreach(i=1:n.districts, .combine='rbind') %:%
+                    foreach(j=1:n.districts, .combine='c') %dopar% {
+                         
+                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Lower95']
+                    } 
+               
+               out.hi95 <- foreach(i=1:n.districts, .combine='rbind') %:%
+                    foreach(j=1:n.districts, .combine='c') %dopar% {
+                         
+                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Upper95']
+                    } 
+               
+               dimnames(out.mean) <- dimnames(out.median) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
+               out <- list(mean=out.mean, median=out.median, sd=out.sd, lo95=out.lo95, hi95=out.hi95)
           }
      } else if (level == 'month') {
           if (type == 'dataframe') {
@@ -1053,7 +1074,10 @@ get.param.vals <- function(
                                     to=j,
                                     month=t,
                                     mean=stats[which(row.names(stats) == sel), 'Mean'],
-                                    sd=stats[which(row.names(stats) == sel), 'SD'])
+                                    median=stats[which(row.names(stats) == sel), 'Median'],
+                                    sd=stats[which(row.names(stats) == sel), 'SD'],
+                                    lo95=stats[which(row.names(stats) == sel), 'Lower95'],
+                                    hi95=stats[which(row.names(stats) == sel), 'Upper95'],)
                     }
           }
           
@@ -1068,6 +1092,15 @@ get.param.vals <- function(
                          stats[which(row.names(stats) == sel), 'Mean']
                     }
                
+               out.median <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
+                    foreach(i = 1:n.districts, .combine='rbind', .multicombine=TRUE) %:% 
+                    foreach(j = 1:n.districts, .combine='c', .multicombine=TRUE) %dopar% {
+                         
+                         sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
+                         
+                         stats[which(row.names(stats) == sel), 'Median']
+                    }
+               
                out.sd <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
                     foreach(i = 1:n.districts, .combine='rbind', .multicombine=TRUE) %:% 
                     foreach(j = 1:n.districts, .combine='c', .multicombine=TRUE) %dopar% {
@@ -1077,8 +1110,26 @@ get.param.vals <- function(
                          stats[which(row.names(stats) == sel), 'SD']
                     }
                
-               dimnames(out.mean) <- dimnames(out.sd) <- NULL
-               out <- list(mean=out.mean, sd=out.sd)
+               out.lo95 <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
+                    foreach(i = 1:n.districts, .combine='rbind', .multicombine=TRUE) %:% 
+                    foreach(j = 1:n.districts, .combine='c', .multicombine=TRUE) %dopar% {
+                         
+                         sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
+                         
+                         stats[which(row.names(stats) == sel), 'Lower95']
+                    }
+               
+               out.hi95 <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
+                    foreach(i = 1:n.districts, .combine='rbind', .multicombine=TRUE) %:% 
+                    foreach(j = 1:n.districts, .combine='c', .multicombine=TRUE) %dopar% {
+                         
+                         sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
+                         
+                         stats[which(row.names(stats) == sel), 'Upper95']
+                    }
+               
+               dimnames(out.mean) <- dimnames(out.median) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
+               out <- list(mean=out.mean, median=out.median, sd=out.sd, lo95=out.lo95, hi95=out.hi95)
           }
      }
      
@@ -1120,14 +1171,15 @@ calc.p <- function(d,       # 4D data array produced by the jags.data.array func
                for (t in 1:dim(d)[3]) {
                     
                     if (i == j) (next)
-                    x <- d[i,j,t,which(as.numeric(dimnames(d)$duration) > gen.t*(n.gen-1) & 
-                                            as.numeric(dimnames(d)$duration) <= gen.t*n.gen)]
+                    x <- d[i,j,t,which(as.numeric(dimnames(d)$generation) > gen.t*(n.gen-1) & 
+                                            as.numeric(dimnames(d)$generation) <= gen.t*n.gen)]
                     
                     out[i,j,t] <- (x[!is.na(x)] %*% (seq_along(x)[!is.na(x)]/length(x))) / (sum(x, na.rm=T))
                     
                }
           }
      }
+     dimnames(out) <- dimnames(d)[1:3]
      return(out)
 }
 
@@ -1178,3 +1230,38 @@ decay.func <- function(alpha,       # intercept (baseline number of expected tri
 ) {
      alpha * exp(-lambda*y)
 }
+
+##' Simulate connectivity matrix
+##'
+##' This function takes the mean \eqn{\mu_\pi_{ijt}} of the estimated posterior distribution of \eqn{\pi_{ijt}} (the probability of movement 
+##' from district \eqn{i} to district \eqn{i} in time \eqn{t}) and returns one stochastic realization of the connectivity matrix. Each stochastic 
+##' realization is produced by returning the vector \eqn{\boldsymbol\pi_{i\{j\}t}} from a Dirichlet distribution.
+##' 
+##' @param mu a three dimensional array giving the mean of the posterior distribution for \eqn{\pi_{ijt}}
+##' 
+##' @return A three dimensional array with values between 0 and 1, where rows (all \eqn{j} destination districts) sum to 1
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/sim_connectivity.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.connectivity <- function(mu) { # Mean of posterior distribution for pi
+     
+     require(MCMCpack)
+     
+     out <- array(NA, dim=dim(mu))
+     for (i in 1:dim(mu)[1]) {
+          for (t in 1:dim(mu)[3]) { 
+               
+               out[i,,t] <- MCMCpack::rdirichlet(1, mu[i,,t])
+          }
+     }
+     
+     return(out)  
+}
+
