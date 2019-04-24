@@ -12,9 +12,10 @@ jags.data.array(d, time = "month", variable = "duration",
 
 \item{time}{The temporal interal used to construct the array (default = \code{'month'})}
 
-\item{variable}{Character string giving the response variable; expects either \code{'distance'} or \code{'duration'}}
+\item{variable}{Character string giving the response variable; expects either \code{'distance'}, \code{'duration'}, or \code{'movement'}}
 
-\item{agg.int}{The interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km.}
+\item{agg.int}{The interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
+of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.}
 
 \item{parallel}{Logical indicating whether to execute in parallel}
 
@@ -25,8 +26,8 @@ A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional arr
 }
 \description{
 This function that builds data arrays at the time-level (e.g. month) for use in JAGS. The data arrays contain counts of either 
-the distance or duration of trips. When 'distance' is selected as the variable, the function returns 
-a three-dimensional array and when 'duration' is selected, the function returns a four-dimensional array.
+the distance or duration of trips, or the number of individuals moving from origin i to destination j. When 'distance' is selected as the variable, the function returns 
+a three-dimensional array giving the count of trips within each distance interval, when 'duration' is selected, the function returns a four-dimensional array.
 The difference in array dimensions occurs because the destination dimension must be collapsed in order to
 perform counts of trip distance, leaving only the origin, time, and distance counts.
 }
