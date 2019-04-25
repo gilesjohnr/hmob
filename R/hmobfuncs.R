@@ -926,6 +926,11 @@ jags.data.array.route.level <- function(x,              # output from jags.data.
                      c(1,2,4), 
                      function(x) as.integer(round(mean(x, na.rm=TRUE))))
           
+     } else if (variable == 'movement') {
+          
+          x <- apply(x, 
+                     c(1,2), 
+                     function(x) as.integer(round(mean(x, na.rm=TRUE))))
      }
      
      x[is.nan(x)] <- NA

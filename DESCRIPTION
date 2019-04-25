@@ -9,7 +9,7 @@ Description: Functions for handling data, models, and simulations of human mobil
 License: GPL (>=2)
 RoxygenNote: 6.1.1
 Encoding: UTF-8
-Imports: lattice, plot3D, MCMCpack
-Depends: sp, rgdal, rgeos, stringr, doParallel, foreach, parallel, R (>= 2.10)
+Imports: lattice, plot3D, MCMCpack, sp, rgdal, rgeos, stringr
+Depends: doParallel, foreach, parallel, R (>= 2.10)
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
