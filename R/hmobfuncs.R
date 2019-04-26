@@ -618,19 +618,15 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' Build JAGS data array
 ##'
 ##' This function that builds data arrays at the time-level (e.g. month) for use in JAGS. The data arrays contain counts of either 
-##' the distance or duration of trips, or the number of individuals moving from origin i to destination j. When 'distance' is selected as the variable, the function returns 
-##' a three-dimensional array giving the count of trips within each distance interval, when 'duration' is selected, the function returns a four-dimensional array.
-##' The difference in array dimensions occurs because the destination dimension must be collapsed in order to
-##' perform counts of trip distance, leaving only the origin, time, and distance counts.
+##' the distance or duration of trips, or the number of individuals moving from origin i to destination j.
 ##' 
 ##' @param d Longform data with metadata attached
 ##' @param time The temporal interal used to construct the array (default = \code{'month'})
 ##' @param variable Character string giving the response variable; expects either \code{'distance'}, \code{'duration'}, or \code{'movement'}
 ##' @param agg.int The interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
 ##' of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.
-##' @param parallel Logical indicating whether to execute in parallel
-##' @param n.cores Number of cores to use when \code{parallel = TRUE} (default = NULL, which uses half available cores)
-##' @return A 3-dimensional array when \code{variable = 'distance'}, and a 4-dimensional array when \code{variable = 'duration'}
+##' 
+##' @return A 3-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 4-dimensional array when \code{variable = 'duration'}
 ##' 
 ##' @author John Giles
 ##'
@@ -642,113 +638,8 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 jags.data.array <- function(d,                            # data
                             time='month',                 # temporal interval
                             variable='duration',          # character string giving the response variable: 'distance' or 'duration'
-                            agg.int=1,                    # aggregation interval (for duration: length of epidemic generation in days, for distance it is number of km)
-                            parallel=FALSE,               # whether or not to execute in parallel
-                            n.cores=NULL
+                            agg.int=1                     # aggregation interval (for duration: length of epidemic generation in days, for distance it is number of km)
 ) {
-     
-     if (parallel == TRUE) {
-          
-          print("Beginning parallel jags.data.array")
-
-          options(mc.cores=n.cores)
-          clust <- makeForkCluster()
-          registerDoParallel(clust) # register as foreach back end
-          print(getDoParRegistered()); print(getDoParWorkers()) # check
-          print("Cluster allocated")
-          
-          if (variable == 'distance') {
-               
-               print("Variable is distance")
-               
-               n.int <- ceiling(max(d[,variable])/agg.int)
-               
-               o <- sort(unique(d$from))                # rows = i
-               t <- sort(unique(d[,time]))              # cols = j
-               v <- sort(unique(d[,variable]))          # 3D  = k
-               g <- 1:n.int                             # Distance intervals to aggregate
-               
-               # get counts for observed route distances
-               out <- foreach(k = g, .combine=function(a, b) abind(a, b, along=3)) %:% 
-                    foreach(i = o, .combine='rbind', .multicombine=TRUE) %:% 
-                    foreach(j = t, .combine='c', .multicombine=TRUE) %dopar% {
-                         
-                         x <- sum(d[d$from == i 
-                                    & d[,time] == j 
-                                    & d[,variable] > (k*agg.int - agg.int) 
-                                    & d[,variable] <= k*agg.int, 
-                                    'count'],
-                                  na.rm=TRUE)
-                         
-                         if (x == 0) x <- NA
-                         x
-                    }
-               
-               print("Finished foreach parallel part")
-               
-               dimnames(out) <- list(origin=o, time=t, distance=g)
-               
-          } else if (variable == 'duration') {
-               
-               print("Variable is duration")
-               
-               n.gen <- ceiling(max(d[,variable])/agg.int)
-               
-               orig <- sort(unique(d$from))                # rows = i origins
-               dest <- sort(unique(d$to))                  # cols = j destinations
-               t <- sort(unique(d[,time]))                 # 3D = k months
-               g <- 1:n.gen                                # 4D  = l generations
-               
-               out <- foreach(l = g, .combine=function(a, b) abind(a, b, along=4)) %:%
-                    foreach(k = t, .combine=function(a, b) abind(a, b, along=3)) %:% 
-                    foreach(i = orig, .combine='rbind', .multicombine=TRUE) %:% 
-                    foreach(j = dest, .combine='c', .multicombine=TRUE) %dopar% {
-                         
-                         x <- sum(d[d$from == i 
-                                    & d$to == j 
-                                    & d[,time] == k  
-                                    & d[,variable] > (l*agg.int - agg.int) 
-                                    & d[,variable] <= l*agg.int, 
-                                    'count'], 
-                                  na.rm=TRUE)
-                         
-                         if (x == 0) x <- NA
-                         x
-                    }
-               
-               print("Finished foreach parallel part")
-               
-               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
-               
-          } else if (variable == 'movement') {
-               
-               print("Variable is movement")
-               
-               orig <- sort(unique(d$from))                # rows = i origins
-               dest <- sort(unique(d$to))                  # cols = j destinations
-               t <- sort(unique(d[,time]))                 # 3D = k months
-               
-               out <- foreach(k = t, .combine=function(a, b) abind(a, b, along=3)) %:% 
-                    foreach(i = orig, .combine='rbind', .multicombine=TRUE) %:% 
-                    foreach(j = dest, .combine='c', .multicombine=TRUE) %dopar% {
-                         
-                         x <- sum(d[d$from == i 
-                                    & d$to == j 
-                                    & d[,time] == k, 
-                                    'count'], 
-                                  na.rm=TRUE)
-                         
-                         if (x == 0) x <- NA
-                         x
-                    }
-               
-               print("Finished foreach parallel part")
-               
-               dimnames(out) <- list(origin=orig, destination=dest, time=t)
-          }
-     }
-     
-     if (parallel == FALSE) {
           
           print("Beginning sequential jags.data.array")
           
@@ -886,7 +777,6 @@ jags.data.array <- function(d,                            # data
                
                dimnames(out) <- list(origin=orig, destination=dest, time=t)
           }
-     }
      
      print("Finished jags.data.array")
      return(out)
@@ -899,9 +789,9 @@ jags.data.array <- function(d,                            # data
 ##' months.
 ##' 
 ##' @param x Month-level Output from the \code{\link{jags.data.array}} function
-##' @param variable The variable in the data object (expects either \code{'distance'} or \code{'duration'})
+##' @param variable The variable in the data object (expects either \code{'distance'}, \code{'duration'}, or \code{'movement'})
 ##' 
-##' @return A 2-dimensional array when \code{variable = 'distance'}, and a 3-dimensional array when \code{variable = 'duration'}
+##' @return A 2-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 3-dimensional array when \code{variable = 'duration'}
 ##' 
 ##' @author John Giles
 ##'

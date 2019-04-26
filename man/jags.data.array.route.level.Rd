@@ -9,10 +9,10 @@ jags.data.array.route.level(x, variable)
 \arguments{
 \item{x}{Month-level Output from the \code{\link{jags.data.array}} function}
 
-\item{variable}{The variable in the data object (expects either \code{'distance'} or \code{'duration'})}
+\item{variable}{The variable in the data object (expects either \code{'distance'}, \code{'duration'}, or \code{'movement'})}
 }
 \value{
-A 2-dimensional array when \code{variable = 'distance'}, and a 3-dimensional array when \code{variable = 'duration'}
+A 2-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 3-dimensional array when \code{variable = 'duration'}
 }
 \description{
 This function reduces the output from the \code{\link{jags.data.array}} function---which contains data for the
