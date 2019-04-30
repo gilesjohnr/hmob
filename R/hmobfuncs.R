@@ -1041,13 +1041,15 @@ get.param.vals <- function(
 ##' \cr
 ##' \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
 ##' 
-##' @param d 4-dimensional data array produced by the \code{\link{jags.data.array}} function \emph{or} the \code{duration.array.month.level} data object in the \pkg{hmobdata} package
+##' @param d a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function
 ##' @param gen.t the time interval in days used to define the epidemic generation
 ##' @param n.gen a scalar indicating the $n^th$ generation for which to calculate proportion of individuals remaining for the full epidemic generation
 ##' 
 ##' @return A 4-dimensional array with values between 0 and 1
 ##' 
 ##' @author John Giles
+##' 
+##' @example R/examples/calc_p.R
 ##'
 ##' @family simulation
 ##' 
@@ -1074,6 +1076,7 @@ calc.p <- function(d,       # 4D data array produced by the jags.data.array func
                }
           }
      }
+     out[is.nan(out)] <- NA
      dimnames(out) <- dimnames(d)[1:3]
      return(out)
 }

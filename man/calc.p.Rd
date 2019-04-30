@@ -7,7 +7,7 @@
 calc.p(d, gen.t, n.gen = 1)
 }
 \arguments{
-\item{d}{4-dimensional data array produced by the \code{\link{jags.data.array}} function \emph{or} the \code{duration.array.month.level} data object in the \pkg{hmobdata} package}
+\item{d}{a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function}
 
 \item{gen.t}{the time interval in days used to define the epidemic generation}
 
@@ -23,6 +23,17 @@ is defined as the effective probability if individuals that stay for a full epid
 when they travel to destination \eqn{j} at time \eqn{t}:\cr
 \cr
 \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
+}
+\examples{
+library(hmobdata)
+data(duration.array.month.level)
+
+# Proportion travellers remaining after 1 generation, where the generation time is 3 days (influenza)
+p <- calc.p(d=duration.array.month.level, gen.t=3, n.gen=1)
+
+# Get destination-level mean and variance
+p.mean <- apply(p, 2, mean, na.rm=TRUE)
+p.var <- apply(p, 2, var, na.rm=TRUE)
 }
 \seealso{
 Other simulation: \code{\link{decay.func}},
