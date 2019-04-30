@@ -1150,13 +1150,11 @@ decay.func <- function(alpha,       # intercept (baseline number of expected tri
 
 sim.connectivity <- function(mu) { # Mean of posterior distribution for pi
      
-     require(MCMCpack)
-     
      out <- array(NA, dim=dim(mu))
      for (i in 1:dim(mu)[1]) {
           for (t in 1:dim(mu)[3]) { 
                
-               out[i,,t] <- MCMCpack::rdirichlet(1, mu[i,,t])
+               out[i,,t] <- gtools::rdirichlet(1, mu[i,,t])
           }
      }
      
