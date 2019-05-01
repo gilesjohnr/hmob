@@ -623,7 +623,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @param d Longform data with metadata attached
 ##' @param time The temporal interal used to construct the array (default = \code{'month'})
 ##' @param variable Character string giving the response variable; expects either \code{'distance'}, \code{'duration'}, or \code{'movement'}
-##' @param agg.int The interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
+##' @param agg.int an integer giving the interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
 ##' of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.
 ##' 
 ##' @return A 3-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 4-dimensional array when \code{variable = 'duration'}
@@ -645,7 +645,7 @@ jags.data.array <- function(d,                            # data
           
           if (variable == 'distance') {
                
-               n.int <- ceiling(max(d[,variable])/agg.int)
+               n.int <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
                
                orig <- sort(unique(d$from))
                t <- sort(unique(d[,time]))       
@@ -666,6 +666,8 @@ jags.data.array <- function(d,                            # data
                     
                     print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
                     
+                    if (all(is.na(d[i,]))) (next)
+                    
                     sel <- out[which(orig == d[i, 'from']), 
                                which(t == d[i, time]), 
                                ceiling(d[i, variable]/agg.int)]
@@ -684,13 +686,13 @@ jags.data.array <- function(d,                            # data
                     }
                }
                
-               dimnames(out) <- list(origin=orig, time=t, distance=1:ceiling(max(d[,variable])))
+               dimnames(out) <- list(origin=orig, time=t, distance=1:ceiling(max(d[,variable], na.rm=TRUE)))
                
           } else if (variable == 'duration') {
                
                print("Variable is duration")
                
-               n.gen <- ceiling(max(d[,variable])/agg.int)
+               n.gen <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
                
                orig <- sort(unique(d$from))  
                dest <- sort(unique(d$to))
@@ -711,6 +713,7 @@ jags.data.array <- function(d,                            # data
                     
                     print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
                     
+                    if (all(is.na(d[i,]))) (next)
                     if (d[i, variable] > agg.int*n.gen) (next)
                     
                     sel <- out[which(orig == d[i, 'from']), 
@@ -734,7 +737,13 @@ jags.data.array <- function(d,                            # data
                     }
                }
                
-               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
+               if (agg.int == 1) {
+                    dimnames(out) <- list(origin=orig, destination=dest, time=t, duration=g)
+                    print("NOTE: Variable name is 'duration' because agg.int = 1")
+               } else {
+                    dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
+                    print("NOTE: Variable name is 'generation' because agg.int > 1")
+               }
                
           } else if (variable == 'movement') {
                
@@ -756,6 +765,8 @@ jags.data.array <- function(d,                            # data
                for (i in 1:nrow(d)) {
                     
                     print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+                    
+                    if (all(is.na(d[i,]))) (next)
                     
                     sel <- out[which(orig == d[i, 'from']), 
                                which(dest == d[i, 'to']), 
@@ -1041,9 +1052,9 @@ get.param.vals <- function(
 ##' \cr
 ##' \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
 ##' 
-##' @param d a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function
+##' @param d a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function. 
+##' Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{jags.data.array} argument \code{agg.int}=1)
 ##' @param gen.t the time interval in days used to define the epidemic generation
-##' @param n.gen a scalar indicating the $n^th$ generation for which to calculate proportion of individuals remaining for the full epidemic generation
 ##' 
 ##' @return A 4-dimensional array with values between 0 and 1
 ##' 
@@ -1057,27 +1068,43 @@ get.param.vals <- function(
 ##' 
 
 calc.p <- function(d,       # 4D data array produced by the jags.data.array function
-                   gen.t,   # interval used to define the epidemic generation
-                   n.gen=1  # a scalar indicating the maximum epidemic generation to calculate rho for
+                   gen.t    # interval used to define the epidemic generation
 ) {
      
-     out <- array(NA, dim(d)[1:3])
+     if (is.null(dimnames(d)$duration)) {
+          stop("The calc.p function assumes that the duration values in the data array are NOT aggregated. Check that you have run the jags.data.array function with agg.int=1")
+     } 
+     
+     max.gen <- ceiling(max(as.numeric(dimnames(d)$duration))/gen.t)
+     out <- array(NA, dim=c(dim(d)[1:3], max.gen))
      
      for (i in 1:dim(d)[1]) {
           for (j in 1:dim(d)[2]) {
                for (t in 1:dim(d)[3]) {
-                    
-                    if (i == j) (next)
-                    x <- d[i,j,t,which(as.numeric(dimnames(d)$generation) > gen.t*(n.gen-1) & 
-                                            as.numeric(dimnames(d)$generation) <= gen.t*n.gen)]
-                    
-                    out[i,j,t] <- (x[!is.na(x)] %*% (seq_along(x)[!is.na(x)]/length(x))) / (sum(x, na.rm=T))
-                    
+                    for (k in 1:max.gen) {
+                         
+                         print(paste(round(i/dim(d)[1], 2),
+                                     round(j/dim(d)[2], 2),
+                                     round(t/dim(d)[3], 2),
+                                     round(k/max.gen, 2),
+                                     sep=" | "))
+                         
+                         if (i == j) (next)
+                         
+                         x <- d[i,j,t,which(as.numeric(dimnames(d)$duration) > gen.t*(k-1) & 
+                                                 as.numeric(dimnames(d)$duration) <= gen.t*k)]
+                         
+                         out[i,j,t,k] <- (x[!is.na(x)] %*% (seq_along(x)[!is.na(x)]/length(x))) / (sum(x, na.rm=T))
+                    }
                }
           }
      }
+     
      out[is.nan(out)] <- NA
-     dimnames(out) <- dimnames(d)[1:3]
+     dimnames(out) <- list(origin=dimnames(d)$origin,
+                           destination=dimnames(d)$destination,
+                           time=dimnames(d)$time,
+                           generation=as.character(1:max.gen))
      return(out)
 }
 
@@ -1160,4 +1187,52 @@ sim.connectivity <- function(mu) { # Mean of posterior distribution for pi
      
      return(out)  
 }
+
+##' Simulate rho
+##'
+##' A function that takes output from the \code{calc.p} function and simulates one stochastic realization
+##' of rho. The function does so by calculating 
+##' 
+##' @param p 
+##' @param level
+##' 
+##' @return 
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/sim_rho.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.rho <- function(p, 
+                    level
+){
+     
+     if (level == 'route') {
+          
+          mu.p <- apply(p, c(1,2), mean, na.rm=TRUE)
+          
+          sigma.p <- foreach(i = 1:dim(p)[1], .combine='rbind') %:% 
+               foreach(j = 1:dim(p)[2], .combine='c') %do% {
+                    
+                    x <- var(as.vector(p[i,j,,]), na.rm=TRUE)
+               }
+          
+          beta.params <- get.beta.params(mu.p, sigma.p)
+          
+          out <- foreach(i = 1:dim(p)[1], .combine='rbind') %:% 
+               foreach(j = 1:dim(p)[2], .combine='c') %do% {
+                    
+                    x <- rbeta(1, beta.params$a[i,j], beta.params$b[i,j])
+               }
+          
+          dimnames(out) <- dimnames(sigma.p) <- dimnames(mu.p)
+     }
+     
+     return(out) 
+}
+
 

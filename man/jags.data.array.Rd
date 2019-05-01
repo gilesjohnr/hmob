@@ -14,7 +14,7 @@ jags.data.array(d, time = "month", variable = "duration",
 
 \item{variable}{Character string giving the response variable; expects either \code{'distance'}, \code{'duration'}, or \code{'movement'}}
 
-\item{agg.int}{The interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
+\item{agg.int}{an integer giving the interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
 of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.}
 }
 \value{

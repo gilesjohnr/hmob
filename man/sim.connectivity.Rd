@@ -24,7 +24,8 @@ pi.hat <- sim.connectivity(mu=tmp$mean)
 }
 \seealso{
 Other simulation: \code{\link{calc.p}},
-  \code{\link{decay.func}}, \code{\link{get.beta.params}}
+  \code{\link{decay.func}}, \code{\link{get.beta.params}},
+  \code{\link{sim.rho}}
 }
 \author{
 John Giles

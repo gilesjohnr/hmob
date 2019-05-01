@@ -4,14 +4,13 @@
 \alias{calc.p}
 \title{Proportion of individuals remaining for full epidemic generation}
 \usage{
-calc.p(d, gen.t, n.gen = 1)
+calc.p(d, gen.t)
 }
 \arguments{
-\item{d}{a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function}
+\item{d}{a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function. 
+Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{jags.data.array} argument \code{agg.int}=1)}
 
 \item{gen.t}{the time interval in days used to define the epidemic generation}
-
-\item{n.gen}{a scalar indicating the $n^th$ generation for which to calculate proportion of individuals remaining for the full epidemic generation}
 }
 \value{
 A 4-dimensional array with values between 0 and 1
@@ -38,7 +37,7 @@ p.var <- apply(p, 2, var, na.rm=TRUE)
 \seealso{
 Other simulation: \code{\link{decay.func}},
   \code{\link{get.beta.params}},
-  \code{\link{sim.connectivity}}
+  \code{\link{sim.connectivity}}, \code{\link{sim.rho}}
 }
 \author{
 John Giles
