@@ -36,8 +36,8 @@ p.var <- apply(p, 2, var, na.rm=TRUE)
 }
 \seealso{
 Other simulation: \code{\link{decay.func}},
-  \code{\link{get.beta.params}},
-  \code{\link{sim.connectivity}}, \code{\link{sim.rho}}
+  \code{\link{get.beta.params}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.rho}}
 }
 \author{
 John Giles

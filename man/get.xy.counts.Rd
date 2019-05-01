@@ -61,8 +61,12 @@ plot3D::hist3D(x=as.numeric(rownames(m)), y=as.numeric(colnames(m)), z=log(m+1),
                space=0.05, lighting=T, light="diffuse")
 }
 \seealso{
-Other data synthesis: \code{\link{get.distance.counts}},
-  \code{\link{get.duration.counts}}
+Other data synthesis: \code{\link{get.distance.class}},
+  \code{\link{get.distance.counts}},
+  \code{\link{get.district.names.xy}},
+  \code{\link{get.district.pop}},
+  \code{\link{get.duration.counts}},
+  \code{\link{get.holidays}}, \code{\link{parse.longform}}
 }
 \author{
 John Giles

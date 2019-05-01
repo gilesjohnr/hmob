@@ -30,12 +30,14 @@ tmp <- get.holidays(
 head(tmp)
 }
 \seealso{
-Other data management: \code{\link{get.distance.class}},
+Other data synthesis: \code{\link{get.distance.class}},
+  \code{\link{get.distance.counts}},
   \code{\link{get.district.names.xy}},
   \code{\link{get.district.pop}},
-  \code{\link{parse.longform}}
+  \code{\link{get.duration.counts}},
+  \code{\link{get.xy.counts}}, \code{\link{parse.longform}}
 }
 \author{
 John Giles
 }
-\concept{data management}
+\concept{data synthesis}

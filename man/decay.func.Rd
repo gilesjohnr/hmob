@@ -23,8 +23,8 @@ given the intercept \eqn{\alpha} and decay rate \eqn{\lambda} parameters using t
 }
 \seealso{
 Other simulation: \code{\link{calc.p}},
-  \code{\link{get.beta.params}},
-  \code{\link{sim.connectivity}}, \code{\link{sim.rho}}
+  \code{\link{get.beta.params}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.rho}}
 }
 \author{
 John Giles

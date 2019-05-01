@@ -31,11 +31,14 @@ tmp <- get.distance.class(
 head(tmp)
 }
 \seealso{
-Other data management: \code{\link{get.district.names.xy}},
+Other data synthesis: \code{\link{get.distance.counts}},
+  \code{\link{get.district.names.xy}},
   \code{\link{get.district.pop}},
-  \code{\link{get.holidays}}, \code{\link{parse.longform}}
+  \code{\link{get.duration.counts}},
+  \code{\link{get.holidays}}, \code{\link{get.xy.counts}},
+  \code{\link{parse.longform}}
 }
 \author{
 John Giles
 }
-\concept{data management}
+\concept{data synthesis}

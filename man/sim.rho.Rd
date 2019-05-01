@@ -2,21 +2,22 @@
 % Please edit documentation in R/hmobfuncs.R
 \name{sim.rho}
 \alias{sim.rho}
-\title{Simulate rho}
+\title{Simulate proportion remaining for full generation (rho)}
 \usage{
 sim.rho(p, level)
 }
 \arguments{
-\item{p}{}
+\item{p}{an array produced by the \code{calc.p} function giving the proportion of travellers remaining after \eqn{n} generations}
 
-\item{level}{}
+\item{level}{the level of the data for which to generate the stochastic realization of rho (e.g. destination-, route- or month-level)}
 }
 \value{
-
+a numerical matrix when \code{level = 'route'}
 }
 \description{
 A function that takes output from the \code{calc.p} function and simulates one stochastic realization
-of rho. The function does so by calculating
+of rho. The function does so by calculating the mean and variance of \code{p} at the level indicated by the \code{level}
+argument, and then derives the shape and rate parameters for the beta distribution.
 }
 \examples{
 d <- read.csv("./BeyondCommuting2/trip_lengths/trip_durations_longform_metadata_13_34_42_85_10_14_16_99_urban_rural.csv", stringsAsFactors=F)
@@ -27,7 +28,7 @@ rho.hat <- sim.rho(p=p, level='route')
 \seealso{
 Other simulation: \code{\link{calc.p}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
-  \code{\link{sim.connectivity}}
+  \code{\link{sim.lambda}}, \code{\link{sim.pi}}
 }
 \author{
 John Giles

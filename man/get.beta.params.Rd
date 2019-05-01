@@ -20,8 +20,8 @@ using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 
 }
 \seealso{
 Other simulation: \code{\link{calc.p}},
-  \code{\link{decay.func}}, \code{\link{sim.connectivity}},
-  \code{\link{sim.rho}}
+  \code{\link{decay.func}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.rho}}
 }
 \author{
 John Giles

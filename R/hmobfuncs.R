@@ -13,7 +13,7 @@
 ##'
 ##' @example R/examples/parse_longform.R
 ##' 
-##' @family data management
+##' @family data synthesis
 ##' 
 ##' @export
 ##' 
@@ -84,7 +84,7 @@ parse.longform <- function(d,          # expects 'trip_durations_counts_sub_42.t
 ##'
 ##' @example R/examples/get_district_names_xy.R
 ##' 
-##' @family data management
+##' @family data synthesis
 ##' 
 ##' @export
 ##' 
@@ -141,7 +141,7 @@ get.district.names.xy <- function(a, # expects "trip_durations_longform.csv"
 ##'
 ##' @example R/examples/get_district_pop.R
 ##' 
-##' @family data management
+##' @family data synthesis
 ##' 
 ##' @export
 ##' 
@@ -194,7 +194,7 @@ get.district.pop <- function(a, # expects "trip_durations_longform2.csv" or simi
 ##'
 ##' @example R/examples/get_distance_class.R
 ##' 
-##' @family data management
+##' @family data synthesis
 ##' 
 ##' @export
 ##' 
@@ -247,7 +247,7 @@ get.distance.class <- function(a,  # expects 'trip_durations_longform3.csv'
 ##'
 ##' @example R/examples/get_holidays.R
 ##' 
-##' @family data management
+##' @family data synthesis
 ##' 
 ##' @export
 ##' 
@@ -1156,7 +1156,7 @@ decay.func <- function(alpha,       # intercept (baseline number of expected tri
      alpha * exp(-lambda*y)
 }
 
-##' Simulate connectivity matrix
+##' Simulate connectivity matrix (pi)
 ##'
 ##' This function takes the mean \eqn{\mu_\pi_{ijt}} of the estimated posterior distribution of \eqn{\pi_{ijt}} (the probability of movement 
 ##' from district \eqn{i} to district \eqn{i} in time \eqn{t}) and returns one stochastic realization of the connectivity matrix. Each stochastic 
@@ -1175,7 +1175,7 @@ decay.func <- function(alpha,       # intercept (baseline number of expected tri
 ##' @export
 ##' 
 
-sim.connectivity <- function(mu) { # Mean of posterior distribution for pi
+sim.pi <- function(mu) { # Mean of posterior distribution for pi
      
      out <- array(NA, dim=dim(mu))
      for (i in 1:dim(mu)[1]) {
@@ -1188,15 +1188,16 @@ sim.connectivity <- function(mu) { # Mean of posterior distribution for pi
      return(out)  
 }
 
-##' Simulate rho
+##' Simulate proportion remaining for full generation (rho)
 ##'
 ##' A function that takes output from the \code{calc.p} function and simulates one stochastic realization
-##' of rho. The function does so by calculating 
+##' of rho. The function does so by calculating the mean and variance of \code{p} at the level indicated by the \code{level}
+##' argument, and then derives the shape and rate parameters for the beta distribution.
 ##' 
-##' @param p 
-##' @param level
+##' @param p an array produced by the \code{calc.p} function giving the proportion of travellers remaining after \eqn{n} generations
+##' @param level the level of the data for which to generate the stochastic realization of rho (e.g. destination-, route- or month-level) 
 ##' 
-##' @return 
+##' @return a numerical matrix when \code{level = 'route'}
 ##' 
 ##' @author John Giles
 ##' 
@@ -1235,4 +1236,41 @@ sim.rho <- function(p,
      return(out) 
 }
 
+##' Simulate decay rate (lambda)
+##'
+##' A function to simulate one stochastic realization of the decay rate lambda given the mean and standard deviation of the posterior 
+##' distribution estimated by model of decay rate or a gravity model.
+##' 
+##' @param mu mean of posterior distribution of decay rate lambda
+##' @param sigma standard deviation of posterior distribution of decay rate lambda
+##' @param level the level of the data at which the mean and standard deviation of lambda are given (e.g. destination-, route- or month-level) 
+##' 
+##' @return a numerical matrix when \code{level = 'route'}
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/sim_lambda.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
 
+#############################################################################
+# function to simulate one stochastic realization of the decay rate lambda
+
+sim.lambda <- function(mu,       # mean of posterior distribution of decay rate lambda
+                       sigma,    # standard deviation of posterior distribution of decay rate lambda
+                       level     # the level of the data at which the mean and standard deviation of lambda are given
+){
+     if (level == 'route') {
+          out <- array(NA, dim(mu))
+          for (i in 1:dim(mu)[1]) {
+               
+               out[i,] <- truncnorm::rtruncnorm(dim(mu)[1], a=0, mean=mu[i,], sd=sigma[i,])
+          }
+          diag(out) <- NA
+     }
+     
+     return(out)
+}
