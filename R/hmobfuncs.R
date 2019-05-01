@@ -1168,7 +1168,7 @@ decay.func <- function(alpha,       # intercept (baseline number of expected tri
 ##' 
 ##' @author John Giles
 ##' 
-##' @example R/examples/sim_connectivity.R
+##' @example R/examples/sim_pi.R
 ##'
 ##' @family simulation
 ##' 
