@@ -1356,6 +1356,7 @@ sim.tau <- function(p # matrix giving the probability of leaving origin
 ##' @param lambda Matrix of trip duration decay for route i to j 
 ##' @param pi Matrix of district connectivity for route i to j
 ##' @param rho Matrix of proportion of travellers remaining for full generation for route i to j
+##' @param tau Vector giving the proportion of individuals that travel in each district
 ##' @param beta Transmission rate
 ##' @param gamma Recovery rate
 ##' @param gen.t Pathogen generation time (days)
@@ -1376,50 +1377,20 @@ sim.tau <- function(p # matrix giving the probability of leaving origin
 
 sim.TSIR <- function(districts,                 # Vector of district names
                      N,                         # Vector giving the population size of each district
-                     lambda,                    # Matrix of trip duration decay for route i to j 
+                     tau=NULL,                       # Vector giving the proportion of individuals that travel in each district
+                     lambda=NULL,                    # Matrix of trip duration decay for route i to j 
                      pi,                        # Matrix of district connectivity for route i to j
-                     rho,                       # Matrix of proportion of travellers remaining for full generation for route i to j
+                     rho=NULL,                       # Matrix of proportion of travellers remaining for full generation for route i to j
                      beta,                      # Transmission rate
                      gamma,                     # Recovery rate
                      gen.t,                     # Pathogen generation time
-                     max.t=100,                 # Maximum number of generations
                      I.0,                       # Vector giving number of infected individuals in each district at time 0
+                     max.t=100,                 # Maximum number of generations
+                     duration=TRUE,             # Logical indicating whether to use information on trip duration in the definition of connectivity
                      freq.dep=TRUE              # Frequency or density dependent transmission
 ) {
      
-     if(!(identical(length(districts), length(N), nrow(lambda), nrow(pi), nrow(rho), length(I.0)))) {
-          stop("Dimensions of simulation arguments must match.")
-     }
-     
      n.districts <- length(districts)
-     
-     # Initialize simulation arrays
-     y <- array(0, dim=c(n.districts, 3, max.t))
-     dimnames(y) <- list(district=districts, compartment=c('S', 'I', 'R'), t=1:max.t)
-     y[,'I',1] <- I.0
-     y[,'S',1] <- N - I.0
-     
-     iota <- kappa <- array(0, dim=c(n.districts, max.t))
-     
-     # Spatial movement of infected
-     for (j in 1:n.districts) {
-          
-          iota[j,1] <- 
-               rpois(1, 
-                     sum(rho[,j] * pi[,j] * y[,'I',1], na.rm=TRUE)
-               )
-     }
-     
-     # Remnant infected individuals
-     for (j in 1:n.districts) {
-          
-          kappa[j,1] <- 
-               rpois(1, 
-                     mean(rho[,j], na.rm=TRUE) * (iota[j,1] * exp(-1 * mean(lambda[,j], na.rm=TRUE)))
-               )
-     }
-     
-     dimnames(kappa) <- dimnames(iota) <- list(district=districts, t=1:max.t)
      
      # Frequency or density dependent transmission
      if (freq.dep == TRUE) {
@@ -1428,27 +1399,113 @@ sim.TSIR <- function(districts,                 # Vector of district names
           beta <- rep(beta, n.districts)
      }
      
-     for (t in 1:(max.t-1)) {
+     # Initialize simulation arrays
+     y <- array(0, dim=c(n.districts, 2, max.t))
+     dimnames(y) <- list(district=districts, compartment=c('S', 'I'), t=1:max.t)
+     y[,'I',1] <- I.0
+     y[,'S',1] <- N - I.0
+     
+     if (duration == 'FALSE') { # Basic gravity model
+          
+          if(!(identical(length(districts), length(N), nrow(pi)))) {
+               stop("Dimensions of simulation arguments must match.")
+          }
+          
+          iota <- h <- w <- array(0, dim=c(n.districts, max.t))
+          dimnames(iota) <- dimnames(h) <- dimnames(w) <- list(district=districts, t=1:max.t)
+          
           for (j in 1:n.districts) {
                
-               dIdt <- rbinom(1, y[j,"S",t], 1 - exp( -beta[j] * ((y[j,'I',t] + iota[j,t] + kappa[j,t])^0.975) ))
-               dRdt <- rbinom(1, y[j,"I",t], 1 - exp(-gamma))
+               # Spatial movement of infected
+               iota[j,1] <- rpois(1, sum(pi[,j] * tau[] * y[,'I',1], na.rm=TRUE))
                
-               y[j,'S',t+1] <- y[j,'S',t] - dIdt
-               y[j,'I',t+1] <- y[j,'I',t] + dIdt - dRdt
-               y[j,'R',t+1] <- y[j,'R',t] + dRdt
+               # Spatial hazard
+               h[j,1] <- (beta[j] * y[j,'S',1] * (1 - exp(-sum(pi[,j] * tau[], na.rm=TRUE) * (y[j,'S',1] / sum(y[j,,1])) * (sum(y[-j,"I",1]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',1])
                
-               iota[j,t+1] <- rpois(1, 
-                                    sum(rho[,j] * pi[,j] * y[,'I',t], na.rm=TRUE)
-               )
+               # Waiting time
+               w[j,1] <- h[j,1]
+          }
+          
+          for (t in 1:(max.t-1)) {
+               for (j in 1:n.districts) {
+                    
+                    # Stochastic change in Susceptible and Infected
+                    dIdt <- rbinom(1, y[j,"S",t], 1 - exp(-beta[j] * ((y[j,'I',t] + iota[j,t])^0.975) ))
+                    dRdt <- rbinom(1, y[j,"I",t], 1 - exp(-gamma))
+                    
+                    y[j,'S',t+1] <- y[j,'S',t] - dIdt
+                    y[j,'I',t+1] <- y[j,'I',t] + dIdt - dRdt
+                    
+                    # Spatial movement of infected
+                    iota[j,t+1] <- rpois(1, 
+                                         sum(pi[,j] * tau[] * y[,'I',t], na.rm=TRUE)
+                    )
+                    
+                    # Spatial hazard
+                    h[j,t+1] <- (beta[j] * y[j,'S',t] * (1 - exp(-sum(pi[,j] * tau[], na.rm=TRUE) * (y[j,'S',t] / sum(y[j,,t])) * (sum(y[-j,"I",t]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',t])
+                    
+                    # Waiting time
+                    w[j,t+1] <- h[j,t+1] * prod(1 - h[j,1:t])
+               }
+          }
+          
+     } else if (duration == 'TRUE') { # Gravity model with trip duration
+          
+          if(!(identical(length(districts), length(N), nrow(lambda), nrow(pi), nrow(rho), length(tau)))) {
+               stop("Dimensions of simulation arguments must match.")
+          }
+          
+          iota <- kappa <- h <- w <- array(0, dim=c(n.districts, max.t))
+          dimnames(kappa) <- dimnames(iota) <- dimnames(h) <- dimnames(w) <- list(district=districts, t=1:max.t)
+          
+          for (j in 1:n.districts) {
                
-               kappa[j,t+1] <- rpois(1, 
-                                     mean(rho[,j], na.rm=TRUE) 
-                                     * sum(iota[j,1:t] * exp(-(1:t) * mean(lambda[,j], na.rm=TRUE)))
-               )
+               # Spatial movement of infected
+               iota[j,1] <- rpois(1, sum(rho[,j] * pi[,j] * tau[] * y[,'I',1], na.rm=TRUE))
+               
+               # Remnant infected individuals
+               kappa[j,1] <- rpois(1, mean(rho[,j], na.rm=TRUE) * (iota[j,1] * exp(-1 * mean(lambda[,j], na.rm=TRUE))))
+               
+               # Spatial hazard
+               h[j,1] <- (beta[j] * y[j,'S',1] * (1 - exp(-sum(rho[,j] * pi[,j] * tau[], na.rm=TRUE) * (y[j,'S',1] / sum(y[j,,1])) * (sum(y[-j,"I",1]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',1])
+               
+               # Waiting time
+               w[j,1] <- h[j,1]
+          }
+          
+          for (t in 1:(max.t-1)) {
+               for (j in 1:n.districts) {
+                    
+                    # Stochastic change in Susceptible and Infected
+                    dIdt <- rbinom(1, y[j,"S",t], 1 - exp( -beta[j] * ((y[j,'I',t] + iota[j,t] + kappa[j,t])^0.975) ))
+                    dRdt <- rbinom(1, y[j,"I",t], 1 - exp(-gamma))
+                    
+                    y[j,'S',t+1] <- y[j,'S',t] - dIdt
+                    y[j,'I',t+1] <- y[j,'I',t] + dIdt - dRdt
+                    
+                    # Spatial movement of infected
+                    iota[j,t+1] <- rpois(1, 
+                                         sum(rho[,j] * pi[,j] * tau[] * y[,'I',t], na.rm=TRUE)
+                    )
+                    
+                    # Remnant infected
+                    kappa[j,t+1] <- rpois(1, 
+                                          mean(rho[,j], na.rm=TRUE) * sum(iota[j,1:t] * exp(-(1:t) * mean(lambda[,j], na.rm=TRUE)))
+                    )
+                    
+                    # Spatial hazard
+                    h[j,t+1] <- (beta[j] * y[j,'S',t] * (1 - exp(-sum(rho[,j] * pi[,j] * tau[], na.rm=TRUE) * (y[j,'S',t] / sum(y[j,,t])) * (sum(y[-j,"I",t]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',t])
+                    
+                    # Waiting time
+                    w[j,t+1] <- h[j,t+1] * prod(1 - h[j,1:t])
+               }
           }
      }
-     return(y)
+     
+     # Normalize waiting time PDFs
+     #for (i in 1:nrow(w)) w[i,] <- w[i,]/sum(w[i,], na.rm=TRUE)
+     
+     return(list(tsir=y, spatial.hazard=h, waiting.time=w))
 }
 
 ##' Calculate observed proportion of each route type
