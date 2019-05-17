@@ -4,13 +4,15 @@
 \alias{sim.pi}
 \title{Simulate connectivity matrix (pi)}
 \usage{
-sim.pi(mu)
+sim.pi(mu, level)
 }
 \arguments{
 \item{mu}{a three dimensional array giving the mean of the posterior distribution for \eqn{\pi_{ijt}}}
+
+\item{level}{the level of the data for which to generate the stochastic realization of pi (e.g. destination-, route- or month-level)}
 }
 \value{
-A three dimensional array with values between 0 and 1, where rows (all \eqn{j} destination districts) sum to 1
+a numerical matrix (when \code{level = 'route'}) with values between 0 and 1, where rows (all \eqn{j} destination districts) sum to 1
 }
 \description{
 This function takes the mean \eqn{\mu_\pi_{ijt}} of the estimated posterior distribution of \eqn{\pi_{ijt}} (the probability of movement 
@@ -25,7 +27,8 @@ pi.hat <- sim.connectivity(mu=tmp$mean)
 \seealso{
 Other simulation: \code{\link{calc.p}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
-  \code{\link{sim.lambda}}, \code{\link{sim.rho}}
+  \code{\link{sim.TSIR}}, \code{\link{sim.lambda}},
+  \code{\link{sim.rho}}, \code{\link{sim.tau}}
 }
 \author{
 John Giles

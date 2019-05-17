@@ -4,8 +4,7 @@
 \alias{trip.map}
 \title{Plot map of origin and destination district(s)}
 \usage{
-trip.map(a, b = NULL, distID = districtIDs, adm = admin2,
-  tol = 0.1)
+trip.map(a, b = NULL, distID = districtIDs, admin = adm, tol = 0.1)
 }
 \arguments{
 \item{a}{origin district (can take integer ID or character name)}
@@ -14,9 +13,9 @@ trip.map(a, b = NULL, distID = districtIDs, adm = admin2,
 
 \item{distID}{district IDs and names, expacts the \code{districtIDs} data object (NamNames.csv)}
 
-\item{adm}{administrative level 2 data, expects \code{admin2} data object (NAM_adm2.shp)}
-
 \item{tol}{tolerance argument passed to \code{gSimplify}, default = 0.1, set to zero for original}
+
+\item{adm}{administrative level 2 data, expects NAM_adm2.shp}
 }
 \value{
 plotted map

@@ -292,7 +292,7 @@ get.holidays <- function(d,       # expects longform trip data
 ##' @param a origin district (can take integer ID or character name)
 ##' @param b destination district (can take integer ID or character name), default = NULL
 ##' @param distID district IDs and names, expacts the \code{districtIDs} data object (NamNames.csv)
-##' @param adm administrative level 2 data, expects \code{admin2} data object (NAM_adm2.shp)
+##' @param adm administrative level 2 data, expects NAM_adm2.shp
 ##' @param tol tolerance argument passed to \code{gSimplify}, default = 0.1, set to zero for original
 ##' 
 ##' @return plotted map
@@ -309,40 +309,40 @@ get.holidays <- function(d,       # expects longform trip data
 trip.map <- function(a, # origin district (can take integer ID or character name)
                      b=NULL, # destination district (can take integer ID or character name)
                      distID=districtIDs, # district IDs and names (expects NamNames.csv)
-                     adm=admin2,  # administrative level 2 data (expects NAM_adm2.shp)
+                     admin=adm,     # administrative level 2 data (expects NAM_adm2.shp)
                      tol=0.1      # tolerance argument for gSimplify, set to zero for original
 ){
      
      # District name required for accessing shapefiles slots
      # Get district name if integer ID provided
-     if(is.character(a) == FALSE) a <- distID[which(distID[,1] == a),2] 
+     if(is.character(a) == FALSE) a <- distID[which(distID[,1] %in% a), 2] 
      
      # Get origin shapefile
-     a <- adm[which(adm$NAME_2 == a),]
+     a <- admin[which(admin$NAME_2 %in% a),]
      
      if (is.null(b)) {
           
           # Plot all districts
-          plot(rgeos::gSimplify(adm, tol=tol, topologyPreserve=TRUE), border='grey60', lwd=1.25)
+          plot(rgeos::gSimplify(admin, tol=tol, topologyPreserve=TRUE), border='grey60', lwd=1.25)
           
           # Add origin
           plot(rgeos::gSimplify(a, tol=tol, topologyPreserve=TRUE), col=rgb(0,0,1, alpha=0.3), add=T)
-          plot(rgeos::gCentroid(a), pch=24, cex=1.75, bg="blue", lwd=2, add=T)
+          plot(rgeos::gCentroid(a, byid=TRUE), pch=21, cex=1.75, bg="blue", lwd=2, add=T)
           
      } else {
           
           # Get district name if integer ID provided
-          if(is.character(b) == FALSE) b <- distID[which(distID[,1] %in% b),2]
+          if(is.character(b) == FALSE) b <- distID[which(distID[,1] %in% b), 2]
           
           # Get destination shapefile
-          b <- adm[which(adm$NAME_2 %in% b),]
+          b <- admin[which(admin$NAME_2 %in% b),]
           
           # Plot all districts
-          plot(rgeos::gSimplify(adm, tol=tol, topologyPreserve=TRUE), border='grey60', lwd=1.25)
+          plot(rgeos::gSimplify(admin, tol=tol, topologyPreserve=TRUE), border='grey60', lwd=1.25)
           
           # Add origin
           plot(rgeos::gSimplify(a, tol=tol, topologyPreserve=TRUE), col=rgb(0,0,1, alpha=0.3), border='black', add=T)
-          plot(rgeos::gCentroid(a), pch=24, cex=1.75, bg="blue", lwd=2, add=T)
+          plot(rgeos::gCentroid(a, byid=TRUE), pch=21, cex=1.75, bg="blue", lwd=2, add=T)
           
           # Add destination
           plot(rgeos::gSimplify(b, tol=tol, topologyPreserve=TRUE), col=rgb(1,0,0, alpha=0.3), border='black', add=T)
@@ -615,191 +615,221 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
      return(out)
 }
 
-##' Build JAGS data array
+##' Build mobility data array
 ##'
-##' This function that builds data arrays at the time-level (e.g. month) for use in JAGS. The data arrays contain counts of either 
+##' This function that builds data arrays at the time-level (e.g. month) for use in mob. The data arrays contain counts of either 
 ##' the distance or duration of trips, or the number of individuals moving from origin i to destination j.
 ##' 
 ##' @param d Longform data with metadata attached
 ##' @param time The temporal interal used to construct the array (default = \code{'month'})
-##' @param variable Character string giving the response variable; expects either \code{'distance'}, \code{'duration'}, or \code{'movement'}
+##' @param variable Character string giving the response variable; expects either \code{'distance'}, \code{'duration'}, \code{'movement'}, or \code{'leave'}
+##' @param level The level of the data. If NULL, the level will be the same as the time variable. If set to \code{route} the mean across the time level will be taken for each route.
 ##' @param agg.int an integer giving the interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
 ##' of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.
 ##' 
-##' @return A 3-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 4-dimensional array when \code{variable = 'duration'}
+##' @return A matrix when \code{variable = 'leave'}, 3-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 4-dimensional array when \code{variable = 'duration'}
 ##' 
 ##' @author John Giles
 ##'
-##' @family model processing
+##' @family data synthesis
 ##' 
 ##' @export
 ##' 
 
-jags.data.array <- function(d,                            # data
+mob.data.array <- function(d,                            # data
                             time='month',                 # temporal interval
                             variable='duration',          # character string giving the response variable: 'distance' or 'duration'
                             agg.int=1                     # aggregation interval (for duration: length of epidemic generation in days, for distance it is number of km)
 ) {
-          
-          print("Beginning sequential jags.data.array")
-          
-          if (variable == 'distance') {
-               
-               n.int <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
-               
-               orig <- sort(unique(d$from))
-               t <- sort(unique(d[,time]))       
-               ints <- 1:n.int
-               
-               print("Variable is distance")
-               
-               # Intialize array
-               out <- array(numeric(), 
-                            dim=c(length(orig), 
-                                  length(t), 
-                                  n.int))
-               
-               print("Initialized out array")
-               
-               # populate NA array with observed counts
-               for (i in 1:nrow(d)) {
-                    
-                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-                    
-                    if (all(is.na(d[i,]))) (next)
-                    
-                    sel <- out[which(orig == d[i, 'from']), 
-                               which(t == d[i, time]), 
-                               ceiling(d[i, variable]/agg.int)]
-                    
-                    if (is.na(sel)) {
-                         
-                         out[which(orig == d[i, 'from']), 
-                             which(t == d[i, time]), 
-                             ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
-                         
-                    } else {
-                         
-                         out[which(orig == d[i, 'from']), 
-                             which(t == d[i, time]), 
-                             ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
-                    }
-               }
-               
-               dimnames(out) <- list(origin=orig, time=t, distance=1:ceiling(max(d[,variable], na.rm=TRUE)))
-               
-          } else if (variable == 'duration') {
-               
-               print("Variable is duration")
-               
-               n.gen <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
-               
-               orig <- sort(unique(d$from))  
-               dest <- sort(unique(d$to))
-               t <- sort(unique(d[,time]))                
-               g <- 1:n.gen
-               
-               # Intialize array
-               out <- array(numeric(), 
-                            dim=c(length(orig), 
-                                  length(dest), 
-                                  length(t), 
-                                  n.gen))
-               
-               print("Initialized out array")
-               
-               # populate NA array with observed counts
-               for (i in 1:nrow(d)) {
-                    
-                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-                    
-                    if (all(is.na(d[i,]))) (next)
-                    if (d[i, variable] > agg.int*n.gen) (next)
-                    
-                    sel <- out[which(orig == d[i, 'from']), 
-                               which(dest == d[i, 'to']), 
-                               which(t == d[i, time]),
-                               ceiling(d[i, variable]/agg.int)]
-                    
-                    if (is.na(sel)) {
-                         
-                         out[which(orig == d[i, 'from']), 
-                             which(dest == d[i, 'to']), 
-                             which(t == d[i, time]),
-                             ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
-                         
-                    } else {
-                         
-                         out[which(orig == d[i, 'from']), 
-                             which(dest == d[i, 'to']), 
-                             which(t == d[i, time]),
-                             ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
-                    }
-               }
-               
-               if (agg.int == 1) {
-                    dimnames(out) <- list(origin=orig, destination=dest, time=t, duration=g)
-                    print("NOTE: Variable name is 'duration' because agg.int = 1")
-               } else {
-                    dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
-                    print("NOTE: Variable name is 'generation' because agg.int > 1")
-               }
-               
-          } else if (variable == 'movement') {
-               
-               print("Variable is movement")
-               
-               orig <- sort(unique(d$from))  
-               dest <- sort(unique(d$to))
-               t <- sort(unique(d[,time]))
-               
-               # Intialize array
-               out <- array(numeric(), 
-                            dim=c(length(orig), 
-                                  length(dest), 
-                                  length(t)))
-               
-               print("Initialized out array")
-               
-               # populate NA array with observed counts
-               for (i in 1:nrow(d)) {
-                    
-                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-                    
-                    if (all(is.na(d[i,]))) (next)
-                    
-                    sel <- out[which(orig == d[i, 'from']), 
-                               which(dest == d[i, 'to']), 
-                               which(t == d[i, time])]
-                    
-                    if (is.na(sel)) {
-                         
-                         out[which(orig == d[i, 'from']), 
-                             which(dest == d[i, 'to']), 
-                             which(t == d[i, time])] <- d[i, 'count']
-                         
-                    } else {
-                         
-                         out[which(orig == d[i, 'from']), 
-                             which(dest == d[i, 'to']), 
-                             which(t == d[i, time])] <- sel + d[i, 'count']
-                    }
-               }
-               
-               dimnames(out) <- list(origin=orig, destination=dest, time=t)
-          }
      
-     print("Finished jags.data.array")
+     if (variable == 'distance') {
+          
+          print("Variable is distance")
+          
+          n.int <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
+          orig <- sort(unique(d$from))
+          t <- sort(unique(d[,time]))       
+          ints <- 1:n.int
+          
+          # Intialize array
+          out <- array(numeric(), 
+                       dim=c(length(orig), 
+                             length(t), 
+                             n.int))
+          
+          print("Initialized out array")
+          
+          # populate NA array with observed counts
+          for (i in 1:nrow(d)) {
+               
+               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               
+               if (all(is.na(d[i,]))) (next)
+               
+               sel <- out[which(orig == d[i, 'from']), 
+                          which(t == d[i, time]), 
+                          ceiling(d[i, variable]/agg.int)]
+               
+               if (is.na(sel)) {
+                    
+                    out[which(orig == d[i, 'from']), 
+                        which(t == d[i, time]), 
+                        ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
+                    
+               } else {
+                    
+                    out[which(orig == d[i, 'from']), 
+                        which(t == d[i, time]), 
+                        ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
+               }
+          }
+          
+          dimnames(out) <- list(origin=orig, time=t, distance=1:ceiling(max(d[,variable], na.rm=TRUE)))
+          
+     } else if (variable == 'duration') {
+          
+          print("Variable is duration")
+          
+          n.gen <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
+          orig <- sort(unique(d$from))  
+          dest <- sort(unique(d$to))
+          t <- sort(unique(d[,time]))                
+          g <- 1:n.gen
+          
+          # Intialize array
+          out <- array(numeric(), 
+                       dim=c(length(orig), 
+                             length(dest), 
+                             length(t), 
+                             n.gen))
+          
+          print("Initialized out array")
+          
+          # populate NA array with observed counts
+          for (i in 1:nrow(d)) {
+               
+               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               
+               if (all(is.na(d[i,]))) (next)
+               if (d[i, variable] > agg.int*n.gen) (next)
+               
+               sel <- out[which(orig == d[i, 'from']), 
+                          which(dest == d[i, 'to']), 
+                          which(t == d[i, time]),
+                          ceiling(d[i, variable]/agg.int)]
+               
+               if (is.na(sel)) {
+                    
+                    out[which(orig == d[i, 'from']), 
+                        which(dest == d[i, 'to']), 
+                        which(t == d[i, time]),
+                        ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
+                    
+               } else {
+                    
+                    out[which(orig == d[i, 'from']), 
+                        which(dest == d[i, 'to']), 
+                        which(t == d[i, time]),
+                        ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
+               }
+          }
+          
+          if (agg.int == 1) {
+               dimnames(out) <- list(origin=orig, destination=dest, time=t, duration=g)
+               print("NOTE: Variable name is 'duration' because agg.int = 1")
+          } else {
+               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
+               print("NOTE: Variable name is 'generation' because agg.int > 1")
+          }
+          
+     } else if (variable == 'movement') {
+          
+          print("Variable is movement")
+          
+          orig <- sort(unique(d$from))  
+          dest <- sort(unique(d$to))
+          t <- sort(unique(d[,time]))
+          
+          # Intialize array
+          out <- array(numeric(), 
+                       dim=c(length(orig), 
+                             length(dest), 
+                             length(t)))
+          
+          print("Initialized out array")
+          
+          # populate NA array with observed counts
+          for (i in 1:nrow(d)) {
+               
+               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               
+               if (all(is.na(d[i,]))) (next)
+               
+               sel <- out[which(orig == d[i, 'from']), 
+                          which(dest == d[i, 'to']), 
+                          which(t == d[i, time])]
+               
+               if (is.na(sel)) {
+                    
+                    out[which(orig == d[i, 'from']), 
+                        which(dest == d[i, 'to']), 
+                        which(t == d[i, time])] <- d[i, 'count']
+                    
+               } else {
+                    
+                    out[which(orig == d[i, 'from']), 
+                        which(dest == d[i, 'to']), 
+                        which(t == d[i, time])] <- sel + d[i, 'count']
+               }
+          }
+          
+          dimnames(out) <- list(origin=orig, destination=dest, time=t)
+          
+     } else if (variable == 'leave') {
+          
+          print("Variable is leave")
+          
+          orig <- sort(unique(d$from))  
+          t <- sort(unique(d[,'date']))
+          
+          # Intialize array
+          out <- array(numeric(), dim=c(length(t), length(orig)))
+          
+          print("Initialized out array")
+          
+          # populate NA array with observed counts
+          for (i in 1:nrow(d)) {
+               
+               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               
+               if (all(is.na(d[i,]))) (next)
+               
+               sel <- out[which(t == d[i, 'date']), which(orig == d[i, 'from'])]
+               
+               if (is.na(sel)) {
+                    
+                    out[which(t == d[i, 'date']), which(orig == d[i, 'from'])] <- d[i, 'count']
+                    
+               } else {
+                    
+                    out[which(t == d[i, 'date']), which(orig == d[i, 'from'])] <- sel + d[i, 'count']
+               }
+          }
+          
+          dimnames(out) <- list(time=t, origin=orig)
+     }
+     
+     print("Finished mob.data.array")
      return(out)
 }
 
-##' Reduce a jags.data.array object to route-level
+##' Reduce a mob.data.array object to route-level
 ##' 
-##' This function reduces the output from the \code{\link{jags.data.array}} function---which contains data for the
+##' This function reduces the output from the \code{\link{mob.data.array}} function---which contains data for the
 ##' month-level---to a route-level data array. The route-level array contains the mean value across all
 ##' months.
 ##' 
-##' @param x Month-level Output from the \code{\link{jags.data.array}} function
+##' @param x Month-level Output from the \code{\link{mob.data.array}} function
 ##' @param variable The variable in the data object (expects either \code{'distance'}, \code{'duration'}, or \code{'movement'})
 ##' 
 ##' @return A 2-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 3-dimensional array when \code{variable = 'duration'}
@@ -811,8 +841,8 @@ jags.data.array <- function(d,                            # data
 ##' @export
 ##' 
 
-jags.data.array.route.level <- function(x,              # output from jags.data.array function
-                                        variable        # 'distance' or 'duration'
+mob.data.array.route.level <- function(x,              # output from mob.data.array function
+                                        variable       # 'distance' or 'duration'
 ){
      
      if (variable == 'distance') {
@@ -838,13 +868,13 @@ jags.data.array.route.level <- function(x,              # output from jags.data.
      return(x)
 }
 
-##' Reduce a jags.data.array object to population-level
+##' Reduce a mob.data.array object to population-level
 ##' 
-##' This function reduces the output from the \code{\link{jags.data.array}} function---which contains data for the
+##' This function reduces the output from the \code{\link{mob.data.array}} function---which contains data for the
 ##' month-level---to a vector giving the population mean. The population-level vector contains the observed mean 
 ##' value of the response variable across all routes and months.
 ##' 
-##' @param x Month-level output from the \code{\link{jags.data.array}} function
+##' @param x Month-level output from the \code{\link{mob.data.array}} function
 ##' @param variable The variable in the data object (expects either \code{'distance'} or \code{'duration'})
 ##' 
 ##' @return vector
@@ -856,7 +886,7 @@ jags.data.array.route.level <- function(x,              # output from jags.data.
 ##' @export
 ##' 
 
-jags.data.array.pop.level <- function(x,              # output from jags.data.array function
+mob.data.array.pop.level <- function(x,              # output from mob.data.array function
                                       variable        # 'distance' or 'duration'
 ){
      
@@ -1052,8 +1082,8 @@ get.param.vals <- function(
 ##' \cr
 ##' \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
 ##' 
-##' @param d a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function. 
-##' Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{jags.data.array} argument \code{agg.int}=1)
+##' @param d a four-dimensional array containing counts of trip durations produced by the \code{\link{mob.data.array}} function. 
+##' Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)
 ##' @param gen.t the time interval in days used to define the epidemic generation
 ##' 
 ##' @return A 4-dimensional array with values between 0 and 1
@@ -1067,12 +1097,12 @@ get.param.vals <- function(
 ##' @export
 ##' 
 
-calc.p <- function(d,       # 4D data array produced by the jags.data.array function
+calc.p <- function(d,       # 4D data array produced by the mob.data.array function
                    gen.t    # interval used to define the epidemic generation
 ) {
      
      if (is.null(dimnames(d)$duration)) {
-          stop("The calc.p function assumes that the duration values in the data array are NOT aggregated. Check that you have run the jags.data.array function with agg.int=1")
+          stop("The calc.p function assumes that the duration values in the data array are NOT aggregated. Check that you have run the mob.data.array function with agg.int=1")
      } 
      
      max.gen <- ceiling(max(as.numeric(dimnames(d)$duration))/gen.t)
@@ -1163,8 +1193,9 @@ decay.func <- function(alpha,       # intercept (baseline number of expected tri
 ##' realization is produced by returning the vector \eqn{\boldsymbol\pi_{i\{j\}t}} from a Dirichlet distribution.
 ##' 
 ##' @param mu a three dimensional array giving the mean of the posterior distribution for \eqn{\pi_{ijt}}
+##' @param level the level of the data for which to generate the stochastic realization of pi (e.g. destination-, route- or month-level) 
 ##' 
-##' @return A three dimensional array with values between 0 and 1, where rows (all \eqn{j} destination districts) sum to 1
+##' @return a numerical matrix (when \code{level = 'route'}) with values between 0 and 1, where rows (all \eqn{j} destination districts) sum to 1
 ##' 
 ##' @author John Giles
 ##' 
@@ -1175,14 +1206,17 @@ decay.func <- function(alpha,       # intercept (baseline number of expected tri
 ##' @export
 ##' 
 
-sim.pi <- function(mu) { # Mean of posterior distribution for pi
+sim.pi <- function(mu, 
+                   level) { # Mean of posterior distribution for pi
      
-     out <- array(NA, dim=dim(mu))
-     for (i in 1:dim(mu)[1]) {
-          for (t in 1:dim(mu)[3]) { 
+     if (level == 'route') {
+          
+          out <- array(NA, dim(mu))
+          for (i in 1:dim(mu)[1]) {
                
-               out[i,,t] <- gtools::rdirichlet(1, mu[i,,t])
+               out[i,] <- gtools::rdirichlet(1, mu[i,])
           }
+          
      }
      
      return(out)  
@@ -1231,6 +1265,7 @@ sim.rho <- function(p,
                }
           
           dimnames(out) <- dimnames(sigma.p) <- dimnames(mu.p)
+          diag(out) <- NA
      }
      
      return(out) 
@@ -1270,6 +1305,213 @@ sim.lambda <- function(mu,       # mean of posterior distribution of decay rate 
                out[i,] <- truncnorm::rtruncnorm(dim(mu)[1], a=0, mean=mu[i,], sd=sigma[i,])
           }
           diag(out) <- NA
+     }
+     
+     return(out)
+}
+
+##' Simulate probability of leaving origin (tau)
+##'
+##' A function that takes a matrix containing the empirical proportion of individuals that leave origin \eqn{i}
+##' for each date in the trip duration data and simulates one stochastic realization
+##' of tau (the overall probability of leaving origin \eqn{i}). The function does so by calculating the mean and variance of \code{p} 
+##' for each origin \eqn{i}, and then derives the shape and rate parameters for the beta distribution.
+##' 
+##' @param p A matrix giving the observed proportion of individuals of leaving origin \eqn{i} for each day in the trip suration data
+##' 
+##' @return a numerical vector with values between 0 and 1
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/sim_tau.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.tau <- function(p # matrix giving the probability of leaving origin
+){
+     
+     mu.p <- apply(p, 2, mean, na.rm=TRUE)
+     sigma.p <- apply(p, 2, var, na.rm=TRUE)
+     beta.params <- get.beta.params(mu.p, sigma.p)
+     
+     out <- rep(NA, ncol(p))
+     for (i in 1:ncol(p)) out[i] <- rbeta(1, beta.params$a[i], beta.params$b[i])
+     
+     names(out) <- dimnames(p)$origin
+     
+     return(out) 
+}
+
+##' Simulate stochastic TSIR
+##'
+##' This function produces one stochastic realization of a spatial Time series Susceptible-Infected-Recovered model. The simulation expects estimates 
+##' of the posterior distribution for trip duration decay rate (lambda), probability of movement (pi), and proportion of travellers remaining for a 
+##' full epidemic generation (rho).
+##' 
+##' @param districts Vector of district names
+##' @param N Vector giving the population size of each district
+##' @param lambda Matrix of trip duration decay for route i to j 
+##' @param pi Matrix of district connectivity for route i to j
+##' @param rho Matrix of proportion of travellers remaining for full generation for route i to j
+##' @param beta Transmission rate
+##' @param gamma Recovery rate
+##' @param gen.t Pathogen generation time (days)
+##' @param max.t Maximum number of epidemic generations
+##' @param I.0 Vector giving number of infected individuals in each district at time 0
+##' @param freq.dep Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission
+##' 
+##' @return a three-dimensional named array giving the numbers of Susceptible, Infected, and Recovered infividuals in each location and time step
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/sim_TSIR.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.TSIR <- function(districts,                 # Vector of district names
+                     N,                         # Vector giving the population size of each district
+                     lambda,                    # Matrix of trip duration decay for route i to j 
+                     pi,                        # Matrix of district connectivity for route i to j
+                     rho,                       # Matrix of proportion of travellers remaining for full generation for route i to j
+                     beta,                      # Transmission rate
+                     gamma,                     # Recovery rate
+                     gen.t,                     # Pathogen generation time
+                     max.t=100,                 # Maximum number of generations
+                     I.0,                       # Vector giving number of infected individuals in each district at time 0
+                     freq.dep=TRUE              # Frequency or density dependent transmission
+) {
+     
+     if(!(identical(length(districts), length(N), nrow(lambda), nrow(pi), nrow(rho), length(I.0)))) {
+          stop("Dimensions of simulation arguments must match.")
+     }
+     
+     n.districts <- length(districts)
+     
+     # Initialize simulation arrays
+     y <- array(0, dim=c(n.districts, 3, max.t))
+     dimnames(y) <- list(district=districts, compartment=c('S', 'I', 'R'), t=1:max.t)
+     y[,'I',1] <- I.0
+     y[,'S',1] <- N - I.0
+     
+     iota <- kappa <- array(0, dim=c(n.districts, max.t))
+     
+     # Spatial movement of infected
+     for (j in 1:n.districts) {
+          
+          iota[j,1] <- 
+               rpois(1, 
+                     sum(rho[,j] * pi[,j] * y[,'I',1], na.rm=TRUE)
+               )
+     }
+     
+     # Remnant infected individuals
+     for (j in 1:n.districts) {
+          
+          kappa[j,1] <- 
+               rpois(1, 
+                     mean(rho[,j], na.rm=TRUE) * (iota[j,1] * exp(-1 * mean(lambda[,j], na.rm=TRUE)))
+               )
+     }
+     
+     dimnames(kappa) <- dimnames(iota) <- list(district=districts, t=1:max.t)
+     
+     # Frequency or density dependent transmission
+     if (freq.dep == TRUE) {
+          beta <- beta/N
+     } else {
+          beta <- rep(beta, n.districts)
+     }
+     
+     for (t in 1:(max.t-1)) {
+          for (j in 1:n.districts) {
+               
+               dIdt <- rbinom(1, y[j,"S",t], 1 - exp( -beta[j] * ((y[j,'I',t] + iota[j,t] + kappa[j,t])^0.975) ))
+               dRdt <- rbinom(1, y[j,"I",t], 1 - exp(-gamma))
+               
+               y[j,'S',t+1] <- y[j,'S',t] - dIdt
+               y[j,'I',t+1] <- y[j,'I',t] + dIdt - dRdt
+               y[j,'R',t+1] <- y[j,'R',t] + dRdt
+               
+               iota[j,t+1] <- rpois(1, 
+                                    sum(rho[,j] * pi[,j] * y[,'I',t], na.rm=TRUE)
+               )
+               
+               kappa[j,t+1] <- rpois(1, 
+                                     mean(rho[,j], na.rm=TRUE) 
+                                     * sum(iota[j,1:t] * exp(-(1:t) * mean(lambda[,j], na.rm=TRUE)))
+               )
+          }
+     }
+     return(y)
+}
+
+##' Calculate observed proportion of each route type
+##'
+##' This function calculates the observed proportion of each of the four route types for 
+##' each day in the trip duration data. The route types are defined by the population density 
+##' of the origin and destination districts:
+##' \enumerate{
+##'   \item High density to high density (HH)
+##'   \item High density to low density (HL)
+##'   \item Low density to high density (LH)
+##'   \item Low density to low density (LL)
+##' }
+##' 
+##' @param d A longform data.frame produced by the _ function, which contains trip duration data
+##' @param hi A vector of numerical district IDs in the high population density group
+##' @param lo A vector of numerical district IDs in the low population density group
+##' 
+##' @return A dataframe with four rows with values between 0 and 1, rows sum to 1 
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/prop_route_type.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+calc.prop.route.type <- function(d,      # longform data frame
+                                 hi,     # vector of numerical district IDs in the high population density group
+                                 lo      # vector of numerical district IDs in the low population density group
+) {
+     
+     out <- data.frame(date=sort(unique(d$date)), HH=0, HL=0, LH=0, LL=0)
+     
+     for (i in 1:nrow(d)) {
+          
+          print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+          
+          if (d$from[i] %in% hi & d$to[i] %in% hi) {
+               
+               out$HH[out$date == d[i, 'date']] <- out$HH[out$date == d[i, 'date']] + d[i, 'count']
+               
+          } else if (d$from[i] %in% hi & d$to[i] %in% lo) {
+               
+               out$HL[out$date == d[i, 'date']] <- out$HL[out$date == d[i, 'date']] + d[i, 'count']
+               
+          } else if (d$from[i] %in% lo & d$to[i] %in% lo) {
+               
+               out$LL[out$date == d[i, 'date']] <- out$LL[out$date == d[i, 'date']] + d[i, 'count']
+               
+          }  else if (d$from[i] %in% lo & d$to[i] %in% hi) {
+               
+               out$LH[out$date == d[i, 'date']] <- out$LH[out$date == d[i, 'date']] + d[i, 'count']
+          }
+     }
+     
+     print("Calculating proportions", quote=FALSE)
+     
+     for (i in 1:nrow(out)){
+          
+          out[i,2:5] <- out[i,2:5] / sum(d[d$date == out[i, 'date'],'count'])
      }
      
      return(out)

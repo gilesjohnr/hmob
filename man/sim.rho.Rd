@@ -28,7 +28,8 @@ rho.hat <- sim.rho(p=p, level='route')
 \seealso{
 Other simulation: \code{\link{calc.p}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
-  \code{\link{sim.lambda}}, \code{\link{sim.pi}}
+  \code{\link{sim.TSIR}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.tau}}
 }
 \author{
 John Giles

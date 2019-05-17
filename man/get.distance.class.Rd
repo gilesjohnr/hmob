@@ -31,11 +31,13 @@ tmp <- get.distance.class(
 head(tmp)
 }
 \seealso{
-Other data synthesis: \code{\link{get.distance.counts}},
+Other data synthesis: \code{\link{calc.prop.route.type}},
+  \code{\link{get.distance.counts}},
   \code{\link{get.district.names.xy}},
   \code{\link{get.district.pop}},
   \code{\link{get.duration.counts}},
   \code{\link{get.holidays}}, \code{\link{get.xy.counts}},
+  \code{\link{mob.data.array}},
   \code{\link{parse.longform}}
 }
 \author{

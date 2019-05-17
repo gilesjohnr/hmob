@@ -33,12 +33,14 @@ write.csv(tmp, file="BeyondCommuting2/trip_lengths/trip_durations_longform.csv",
 Sys.time() - t
 }
 \seealso{
-Other data synthesis: \code{\link{get.distance.class}},
+Other data synthesis: \code{\link{calc.prop.route.type}},
+  \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},
   \code{\link{get.district.names.xy}},
   \code{\link{get.district.pop}},
   \code{\link{get.duration.counts}},
-  \code{\link{get.holidays}}, \code{\link{get.xy.counts}}
+  \code{\link{get.holidays}}, \code{\link{get.xy.counts}},
+  \code{\link{mob.data.array}}
 }
 \author{
 John Giles

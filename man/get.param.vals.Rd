@@ -33,9 +33,8 @@ The function gets the mean, median, standard deviation, and lower and upper 95 %
 for route-level (\eqn{ij}) or month-level (\eqn{ijt}).
 }
 \seealso{
-Other model processing: \code{\link{jags.data.array.pop.level}},
-  \code{\link{jags.data.array.route.level}},
-  \code{\link{jags.data.array}}
+Other model processing: \code{\link{mob.data.array.pop.level}},
+  \code{\link{mob.data.array.route.level}}
 }
 \author{
 John Giles

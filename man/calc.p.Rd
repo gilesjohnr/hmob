@@ -7,8 +7,8 @@
 calc.p(d, gen.t)
 }
 \arguments{
-\item{d}{a four-dimensional array containing counts of trip durations produced by the \code{\link{jags.data.array}} function. 
-Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{jags.data.array} argument \code{agg.int}=1)}
+\item{d}{a four-dimensional array containing counts of trip durations produced by the \code{\link{mob.data.array}} function. 
+Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)}
 
 \item{gen.t}{the time interval in days used to define the epidemic generation}
 }
@@ -36,8 +36,9 @@ p.var <- apply(p, 2, var, na.rm=TRUE)
 }
 \seealso{
 Other simulation: \code{\link{decay.func}},
-  \code{\link{get.beta.params}}, \code{\link{sim.lambda}},
-  \code{\link{sim.pi}}, \code{\link{sim.rho}}
+  \code{\link{get.beta.params}}, \code{\link{sim.TSIR}},
+  \code{\link{sim.lambda}}, \code{\link{sim.pi}},
+  \code{\link{sim.rho}}, \code{\link{sim.tau}}
 }
 \author{
 John Giles
