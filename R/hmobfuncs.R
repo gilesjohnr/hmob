@@ -1417,10 +1417,10 @@ sim.TSIR <- function(districts,                 # Vector of district names
           for (j in 1:n.districts) {
                
                # Spatial movement of infected
-               iota[j,1] <- rpois(1, sum(pi[,j] * tau[] * y[,'I',1], na.rm=TRUE))
+               iota[j,1] <- rpois(1, sum(pi[,j] * y[,'I',1], na.rm=TRUE))
                
                # Spatial hazard
-               h[j,1] <- (beta[j] * y[j,'S',1] * (1 - exp(-sum(pi[,j] * tau[], na.rm=TRUE) * (y[j,'S',1] / sum(y[j,,1])) * (sum(y[-j,"I",1]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',1])
+               h[j,1] <- (beta[j] * y[j,'S',1] * (1 - exp(-sum(pi[,j], na.rm=TRUE) * (y[j,'S',1] / sum(y[j,,1])) * (sum(y[-j,"I",1]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',1])
                
                # Waiting time
                w[j,1] <- h[j,1]
@@ -1438,11 +1438,11 @@ sim.TSIR <- function(districts,                 # Vector of district names
                     
                     # Spatial movement of infected
                     iota[j,t+1] <- rpois(1, 
-                                         sum(pi[,j] * tau[] * y[,'I',t], na.rm=TRUE)
+                                         sum(pi[,j] * y[,'I',t], na.rm=TRUE)
                     )
                     
                     # Spatial hazard
-                    h[j,t+1] <- (beta[j] * y[j,'S',t] * (1 - exp(-sum(pi[,j] * tau[], na.rm=TRUE) * (y[j,'S',t] / sum(y[j,,t])) * (sum(y[-j,"I",t]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',t])
+                    h[j,t+1] <- (beta[j] * y[j,'S',t] * (1 - exp(-sum(pi[,j], na.rm=TRUE) * (y[j,'S',t] / sum(y[j,,t])) * (sum(y[-j,"I",t]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',t])
                     
                     # Waiting time
                     w[j,t+1] <- h[j,t+1] * prod(1 - h[j,1:t])
