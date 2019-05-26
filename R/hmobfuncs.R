@@ -1505,7 +1505,7 @@ sim.TSIR <- function(districts,                 # Vector of district names
      # Normalize waiting time PDFs
      #for (i in 1:nrow(w)) w[i,] <- w[i,]/sum(w[i,], na.rm=TRUE)
      
-     return(list(tsir=y, spatial.hazard=h, waiting.time=w))
+     return(list(tsir=y, spatial.hazard=h, wait.time=w))
 }
 
 ##' Calculate observed proportion of each route type
@@ -1571,5 +1571,196 @@ calc.prop.route.type <- function(d,      # longform data frame
           out[i,2:5] <- out[i,2:5] / sum(d[d$date == out[i, 'date'],'count'])
      }
      
+     return(out)
+}
+
+##' Combine two TSIR scenarios
+##'
+##' Combine output from two TSIR scenarios into one list object.
+##' 
+##' @param x list object of simulation output from first scenario
+##' @param y list object of simulation output from second scenario
+##' 
+##' @return a list
+##' 
+##' @author John Giles
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.combine <- function(x, 
+                        y
+){
+     list(tot.inf=rbind(x$tot.inf, 
+                        y$tot.inf),
+          wait.time=abind::abind(x$wait.time, 
+                                 y$wait.time, 
+                                 along=3))
+}
+
+##' Combine TSIR scenarios containing both gravity model types 
+##'
+##' Helper function designed to facilitate parallel implementation with the foreach package.This function combines
+##' iterations of a TSIR scenario that contain output for both the basic gravity model (B) and the new gravity model
+##' with duration (R).
+##' 
+##' @param x list object of simulation output from first iteration(s)
+##' @param y list object of simulation output from second iteration(s)
+##' 
+##' @return a list
+##' 
+##' @author John Giles
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.combine.dual <- function(x, 
+                             y
+){
+     list(
+          B=list(tot.inf=rbind(x$B$tot.inf, 
+                               y$B$tot.inf),
+                 wait.time=abind::abind(x$B$wait.time, 
+                                        y$B$wait.time, 
+                                        along=3)),
+          
+          R=list(tot.inf=rbind(x$R$tot.inf, 
+                               y$R$tot.inf),
+                 wait.time=abind::abind(x$R$wait.time, 
+                                        y$R$wait.time, 
+                                        along=3))
+     )
+}
+
+##' Simulate full stochastic TSIR in parallel
+##'
+##' This function simulates TSIR models using both the basic gravity model and the gravity model with duration for
+##' each stochastic realization of the estimated model parameters (lambda, pi, rho, tau). The function runs the \code{N.sim1} level
+##' simulations in parallel and the \code{N.sim2} level simulations sequentially.
+##' 
+##' @param districts Vector of district names
+##' @param N Vector giving the population size of each district
+##' @param lambda Estimated parameters from trip duration decay model (lambda), processed by the \code{\link{get.param.vals}} function
+##' @param pi.duration Estimated parameters from gravity model with duration (pi), processed by the \code{\link{get.param.vals}} function
+##' @param pi.basic Estimated parameters from basic gravity model (pi*), processed by the \code{\link{get.param.vals}} function
+##' @param prop.leave Observed proportion individuals leaving origin at time t in trip duration data 
+##' @param prop.remain Observed proportion of individuals remaining in destination j
+##' @param beta Transmission rate
+##' @param gamma Recovery rate
+##' @param gen.t Pathogen generation time (days)
+##' @param max.t Maximum number of epidemic generations
+##' @param I.0 Vector giving number of infected individuals in each district at time 0
+##' @param N.sim1 Number of times to simulate matrices of model parameters (lambda, pi, tau, rho)
+##' @param N.sim2 Number of times to simulate epidemic outcomes under each realization of model parameters (default = 100)
+##' @param max.t Maximum number of generations (default = 100)
+##' @param freq.dep Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission
+##' @param n.cores Number of cores to use when running in parallel (default = NULL will use 2)
+##' 
+##' @return a list containing simulations using the basic gravity model and the gravity model with duration
+##' @author John Giles
+##' 
+##' @example R/examples/sim_TSIR_full.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.TSIR.full <- function(
+     districts,                 # Vector of district names
+     N,                         # Vector giving the population size of each district
+     lambda,                    # Decay model parameters (Lambda)
+     pi.duration,               # Gravity model with duration
+     pi.basic,                  # Basic gravity model
+     prop.leave,                # observed proportion individuals leaving origin at time t in trip duration data 
+     prop.remain,               # observed proportion of individuals remaining in destination j
+     beta,                      # Transmission rate
+     gamma,                     # Recovery rate
+     gen,                       # Pathogen generation time
+     I.0,                       # Vector giving number of infected individuals in each district at time 0
+     N.sim1,                    # Number of times to simulate matrices of model parameters (lambda, pi, tau, rho)
+     N.sim2=100,                # Number of times to simulate epidemic outcomes under each realization of model parameters
+     max.t=100,                 # Maximum number of generations
+     freq.dep=TRUE,             # Frequency or density dependent transmission
+     n.cores=NULL
+){
+     
+     if(!(identical(length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), 
+                    nrow(lambda$mean), nrow(prop.remain)))) {
+          stop("Dimensions of simulation arguments must match.")
+     }
+     
+     n.districts <- length(districts)
+     prop.leave <- prop.leave[,colnames(prop.leave) %in% districts]
+     
+     if(is.null(n.cores)) cl <- parallel::makeCluster(parallel::detectCores()/2)
+     if(!is.null(n.cores)) cl <- parallel::makeCluster(n.cores)
+     
+     doParallel::registerDoParallel(cl)
+     parallel::clusterExport(cl, ls(environment()), envir=environment())
+     
+     out <- foreach(i=1:N.sim1, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {
+          
+          # Simulate one realization of estimated model parameters
+          lambda.hat <- sim.lambda(mu=lambda$mean, sigma=lambda$sd, level='route')
+          pi.hat <- sim.pi(mu=pi.duration$mean, level='route')
+          pi.hat.basic <- sim.pi(mu=pi.basic$mean, level='route')
+          rho.hat <- sim.rho(p=prop.remain, level='route')
+          tau.hat <- sim.tau(prop.leave)
+          
+          B.tot.inf <- R.tot.inf <- matrix(nrow=0, ncol=max.t)
+          B.wait.time <- R.wait.time <- array(NA, dim=c(length(districts), max.t, 0))
+          
+          for (j in 1:N.sim2) {
+               
+               # Basic gravity model
+               sim <- sim.TSIR(districts=districts,                 
+                               N=N,                                 
+                               pi=pi.hat.basic,        # connectivity comes from basic gravity model formulation 
+                               beta=beta,                            # Transmission rate
+                               gamma=gamma,                           # Recovery rate                         
+                               gen=gen,                         
+                               max.t=max.t,                         
+                               I.0=I.0,                             
+                               duration=F,             # do NOT use trip duration in force of infection                 
+                               freq.dep=freq.dep                           
+               )
+               
+               B.tot.inf <- rbind(B.tot.inf, apply(sim$tsir[,'I',], 2, sum))
+               B.wait.time <- abind::abind(B.wait.time, sim$wait.time, along=3)
+               
+               # Gravity model with duration
+               sim <- sim.TSIR(districts=districts,                 
+                               N=N,                                 
+                               tau=tau.hat,            # Probability of leaving district i
+                               lambda=lambda.hat,      # Matrix of trip duration decay for route i to j 
+                               pi=pi.hat,              # Matrix of district connectivity (estimated pi_ijt)
+                               rho=rho.hat,            # Matrix of proportion of travellers remaining for full generation when moving from i to j
+                               beta=beta,              # Transmission rate
+                               gamma=gamma,            # Recovery rate                          
+                               gen=gen,                         
+                               max.t=max.t,                
+                               I.0=I.0,                             
+                               duration=T,             # Use trip duration in force of infection
+                               freq.dep=freq.dep                         
+               )
+               
+               R.tot.inf <- rbind(R.tot.inf, apply(sim$tsir[,'I',], 2, sum))
+               R.wait.time <- abind::abind(R.wait.time, sim$wait.time, along=3)
+          }
+          
+          list(
+               B=list(tot.inf=B.tot.inf,
+                      wait.time=B.wait.time),
+               R=list(tot.inf=R.tot.inf,
+                      wait.time=R.wait.time)
+          )
+     }
+     
+     parallel::stopCluster(cl)
      return(out)
 }

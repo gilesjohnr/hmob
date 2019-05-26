@@ -30,7 +30,9 @@ head(tau.hat)
 \seealso{
 Other simulation: \code{\link{calc.p}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
-  \code{\link{sim.TSIR}}, \code{\link{sim.lambda}},
+  \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
+  \code{\link{sim.combine.dual}},
+  \code{\link{sim.combine}}, \code{\link{sim.lambda}},
   \code{\link{sim.pi}}, \code{\link{sim.rho}}
 }
 \author{

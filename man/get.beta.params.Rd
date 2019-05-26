@@ -20,9 +20,11 @@ using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 
 }
 \seealso{
 Other simulation: \code{\link{calc.p}},
-  \code{\link{decay.func}}, \code{\link{sim.TSIR}},
-  \code{\link{sim.lambda}}, \code{\link{sim.pi}},
-  \code{\link{sim.rho}}, \code{\link{sim.tau}}
+  \code{\link{decay.func}}, \code{\link{sim.TSIR.full}},
+  \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
+  \code{\link{sim.combine}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.rho}},
+  \code{\link{sim.tau}}
 }
 \author{
 John Giles
