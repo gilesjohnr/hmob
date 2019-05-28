@@ -22,7 +22,8 @@ given the intercept \eqn{\alpha} and decay rate \eqn{\lambda} parameters using t
 \eqn{N(y) = \alpha exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
 }
 \seealso{
-Other simulation: \code{\link{calc.p}},
+Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.p}}, \code{\link{calc.wait.time}},
   \code{\link{get.beta.params}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},

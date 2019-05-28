@@ -26,7 +26,8 @@ p <- calc.p(d=d, gen.t=3)
 rho.hat <- sim.rho(p=p, level='route')
 }
 \seealso{
-Other simulation: \code{\link{calc.p}},
+Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.p}}, \code{\link{calc.wait.time}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},

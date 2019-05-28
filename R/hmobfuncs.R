@@ -1661,6 +1661,7 @@ sim.combine.dual <- function(x,
 ##' @param n.cores Number of cores to use when running in parallel (default = NULL will use 2)
 ##' 
 ##' @return a list containing simulations using the basic gravity model and the gravity model with duration
+##'
 ##' @author John Giles
 ##' 
 ##' @example R/examples/sim_TSIR_full.R
@@ -1764,3 +1765,84 @@ sim.TSIR.full <- function(
      parallel::stopCluster(cl)
      return(out)
 }
+
+##' Aggregate simulated waiting time distributions
+##'
+##' This function aggregates the all simulated waiting time distributions into a single probability density for each district. 
+##' The method uses a simple linear combination of waiting time probabilities, sometimes referred to as the 'linear opinion pool'.
+##' 
+##' @param x a three-dimensional array containing waiting time distributions for all districts and simulations
+##' 
+##' @return a matrix (rows = districts, cols = epidemic generation)
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/calc_wait_time.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+calc.wait.time <- function(x) {
+     
+     tmp <- array(NA, dim=dim(x)[1:2])
+     
+     for (i in 1:dim(x)[1]) {
+          for (j in 1:dim(x)[2]) {
+               
+               tmp[i,j] <- sum(x[i,j,], na.rm=T) / dim(x)[3]  
+          }
+          
+          tmp[i,] <- tmp[i,]/sum(tmp[i,])
+     }
+     
+     dimnames(tmp) <- dimnames(x)[1:2]
+     return(tmp)
+}
+
+
+##' Calculate HPD of aggregated waiting time distributions
+##'
+##' This function calculates the highest posterior density (HPD) interval for the aggregated 
+##' waiting time distributions returned by the \code{\link{calc.wait.time}} function. The function 
+##' calculates the maximum of each aggregated probability distribution along with its 50 and 95 percent HPD.
+##' 
+##' @param x aggregated waiting time distributions for each district (output from \code{\link{calc.wait.time}})
+##' 
+##' @return a dataframe
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/calc_hpd.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+calc.hpd <- function(x) {
+     
+     districts <- dimnames(x)[[1]]
+     
+     out <- foreach (i=1:length(districts), .combine=rbind) %do% {
+          
+          # Sample probabilites and calc cumulative density
+          samp <- sample(x[i,], 1e6, replace = TRUE, prob=x[i,]) 
+          cumdens <- cumsum(x[i,]) / sum(x[i,])
+          
+          # Highest posterior density boundaries
+          data.frame(
+               district=districts[i],
+               max=which(x[i,] == max(x[i,])),
+               lo50=which(cumdens >= 0.25)[1]-1,
+               hi50=which(cumdens >= 0.75)[1],
+               lo95=which(cumdens >= 0.025)[1]-1,  
+               hi95=which(cumdens >= 0.975)[1]
+          )
+     } 
+     
+     row.names(out) <- NULL
+     return(out)
+}
+

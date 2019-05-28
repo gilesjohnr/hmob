@@ -20,7 +20,8 @@ iterations of a TSIR scenario that contain output for both the basic gravity mod
 with duration (R).
 }
 \seealso{
-Other simulation: \code{\link{calc.p}},
+Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.p}}, \code{\link{calc.wait.time}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine}}, \code{\link{sim.lambda}},

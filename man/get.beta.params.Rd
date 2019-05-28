@@ -19,7 +19,8 @@ This function to calculates the two shape parameters (\eqn{a} and \eqn{b}) for t
 using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 0 and one 1.
 }
 \seealso{
-Other simulation: \code{\link{calc.p}},
+Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.p}}, \code{\link{calc.wait.time}},
   \code{\link{decay.func}}, \code{\link{sim.TSIR.full}},
   \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
   \code{\link{sim.combine}}, \code{\link{sim.lambda}},

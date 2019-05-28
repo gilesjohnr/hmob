@@ -114,7 +114,8 @@ grav.dur <- sim.TSIR(districts=districts,
 grav.dur[,,1:5]
 }
 \seealso{
-Other simulation: \code{\link{calc.p}},
+Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.p}}, \code{\link{calc.wait.time}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
   \code{\link{sim.TSIR.full}},
   \code{\link{sim.combine.dual}},

@@ -25,7 +25,8 @@ tmp <- get.param.vals(n.districts=8, name='pi', level='month', stats=s.grav)
 pi.hat <- sim.connectivity(mu=tmp$mean)
 }
 \seealso{
-Other simulation: \code{\link{calc.p}},
+Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.p}}, \code{\link{calc.wait.time}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},

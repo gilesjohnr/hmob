@@ -35,7 +35,8 @@ p.mean <- apply(p, 2, mean, na.rm=TRUE)
 p.var <- apply(p, 2, var, na.rm=TRUE)
 }
 \seealso{
-Other simulation: \code{\link{decay.func}},
+Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.wait.time}}, \code{\link{decay.func}},
   \code{\link{get.beta.params}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},
