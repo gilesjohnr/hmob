@@ -18,7 +18,7 @@
 ##' @export
 ##' 
 
-parse.longform <- function(d,          # expects 'trip_durations_counts_sub_42.txt'
+parse.longform <- function(d,           # expects 'trip_durations_counts_sub_42.txt'
                             n.cores     # number cores to use when parallel computing
 ){
      
@@ -1622,14 +1622,16 @@ sim.combine.dual <- function(x,
                              y
 ){
      list(
-          B=list(tot.inf=rbind(x$B$tot.inf, 
-                               y$B$tot.inf),
+          B=list(tot.inf=abind::abind(x$B$tot.inf, 
+                                      y$B$tot.inf, 
+                                      along=3),
                  wait.time=abind::abind(x$B$wait.time, 
                                         y$B$wait.time, 
                                         along=3)),
           
-          R=list(tot.inf=rbind(x$R$tot.inf, 
-                               y$R$tot.inf),
+          R=list(tot.inf=abind::abind(x$R$tot.inf, 
+                                      y$R$tot.inf, 
+                                      along=3),
                  wait.time=abind::abind(x$R$wait.time, 
                                         y$R$wait.time, 
                                         along=3))
@@ -1713,7 +1715,7 @@ sim.TSIR.full <- function(
           rho.hat <- sim.rho(p=prop.remain, level='route')
           tau.hat <- sim.tau(prop.leave)
           
-          B.tot.inf <- R.tot.inf <- matrix(nrow=0, ncol=max.t)
+          B.tot.inf <- R.tot.inf <- array(NA, dim=c(length(districts), max.t, 0))
           B.wait.time <- R.wait.time <- array(NA, dim=c(length(districts), max.t, 0))
           
           for (j in 1:N.sim2) {
@@ -1731,7 +1733,7 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                           
                )
                
-               B.tot.inf <- rbind(B.tot.inf, apply(sim$tsir[,'I',], 2, sum))
+               B.tot.inf <- abind::abind(B.tot.inf, sim$tsir[,'I',], along=3)
                B.wait.time <- abind::abind(B.wait.time, sim$wait.time, along=3)
                
                # Gravity model with duration
@@ -1750,7 +1752,7 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                         
                )
                
-               R.tot.inf <- rbind(R.tot.inf, apply(sim$tsir[,'I',], 2, sum))
+               R.tot.inf <- abind::abind(R.tot.inf, sim$tsir[,'I',], along=3)
                R.wait.time <- abind::abind(R.wait.time, sim$wait.time, along=3)
           }
           
