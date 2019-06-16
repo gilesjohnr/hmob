@@ -4,7 +4,8 @@
 \alias{mob.data.array}
 \title{Build mobility data array}
 \usage{
-mob.data.array(d, time = "month", variable = "duration", agg.int = 1)
+mob.data.array(d, time = "month", variable = "duration", agg.int = 1,
+  verbose = TRUE)
 }
 \arguments{
 \item{d}{Longform data with metadata attached}
@@ -15,6 +16,8 @@ mob.data.array(d, time = "month", variable = "duration", agg.int = 1)
 
 \item{agg.int}{an integer giving the interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
 of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.}
+
+\item{verbose}{print function updates (default = TRUE)}
 
 \item{level}{The level of the data. If NULL, the level will be the same as the time variable. If set to \code{route} the mean across the time level will be taken for each route.}
 }

@@ -626,7 +626,8 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @param level The level of the data. If NULL, the level will be the same as the time variable. If set to \code{route} the mean across the time level will be taken for each route.
 ##' @param agg.int an integer giving the interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
 ##' of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.
-##' 
+##' @param verbose print function progress (default = TRUE)
+##'  
 ##' @return A matrix when \code{variable = 'leave'}, 3-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 4-dimensional array when \code{variable = 'duration'}
 ##' 
 ##' @author John Giles
@@ -637,9 +638,10 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' 
 
 mob.data.array <- function(d,                            # data
-                            time='month',                 # temporal interval
-                            variable='duration',          # character string giving the response variable: 'distance' or 'duration'
-                            agg.int=1                     # aggregation interval (for duration: length of epidemic generation in days, for distance it is number of km)
+                           time='month',                 # temporal interval
+                           variable='duration',          # character string giving the response variable: 'distance' or 'duration'
+                           agg.int=1,                     # aggregation interval (for duration: length of epidemic generation in days, for distance it is number of km)
+                           verbose=TRUE
 ) {
      
      if (variable == 'distance') {
@@ -662,7 +664,9 @@ mob.data.array <- function(d,                            # data
           # populate NA array with observed counts
           for (i in 1:nrow(d)) {
                
-               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               if (verbose == TRUE) {
+                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               }
                
                if (all(is.na(d[i,]))) (next)
                
@@ -708,7 +712,9 @@ mob.data.array <- function(d,                            # data
           # populate NA array with observed counts
           for (i in 1:nrow(d)) {
                
-               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               if (verbose == TRUE) {
+                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               }
                
                if (all(is.na(d[i,]))) (next)
                if (d[i, variable] > agg.int*n.gen) (next)
@@ -761,7 +767,9 @@ mob.data.array <- function(d,                            # data
           # populate NA array with observed counts
           for (i in 1:nrow(d)) {
                
-               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               if (verbose == TRUE) {
+                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               }
                
                if (all(is.na(d[i,]))) (next)
                
@@ -800,7 +808,9 @@ mob.data.array <- function(d,                            # data
           # populate NA array with observed counts
           for (i in 1:nrow(d)) {
                
-               print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               if (verbose == TRUE) {
+                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
+               }
                
                if (all(is.na(d[i,]))) (next)
                
