@@ -1414,6 +1414,8 @@ sim.TSIR <- function(districts,                 # Vector of district names
      dimnames(y) <- list(district=districts, compartment=c('S', 'I'), t=1:max.t)
      y[,'I',1] <- I.0
      y[,'S',1] <- N - I.0
+     tot.inf <- I.0
+     names(tot.inf) <- districts
      
      if (duration == 'FALSE') { # Basic gravity model
           
@@ -1445,6 +1447,7 @@ sim.TSIR <- function(districts,                 # Vector of district names
                     
                     y[j,'S',t+1] <- y[j,'S',t] - dIdt
                     y[j,'I',t+1] <- y[j,'I',t] + dIdt - dRdt
+                    tot.inf[j] <- tot.inf[j] + dIdt
                     
                     # Spatial movement of infected
                     iota[j,t+1] <- rpois(1, 
@@ -1492,6 +1495,7 @@ sim.TSIR <- function(districts,                 # Vector of district names
                     
                     y[j,'S',t+1] <- y[j,'S',t] - dIdt
                     y[j,'I',t+1] <- y[j,'I',t] + dIdt - dRdt
+                    tot.inf[j] <- tot.inf[j] + dIdt
                     
                     # Spatial movement of infected
                     iota[j,t+1] <- rpois(1, 
@@ -1515,7 +1519,7 @@ sim.TSIR <- function(districts,                 # Vector of district names
      # Normalize waiting time PDFs
      #for (i in 1:nrow(w)) w[i,] <- w[i,]/sum(w[i,], na.rm=TRUE)
      
-     return(list(tsir=y, spatial.hazard=h, wait.time=w))
+     return(list(tsir=y, tot.inf=tot.inf, spatial.hazard=h, wait.time=w))
 }
 
 ##' Calculate observed proportion of each route type
@@ -1603,11 +1607,16 @@ calc.prop.route.type <- function(d,      # longform data frame
 sim.combine <- function(x, 
                         y
 ){
-     list(tot.inf=rbind(x$tot.inf, 
+     list(
+          tot.inf=rbind(x$tot.inf, 
                         y$tot.inf),
+          epi.curve=abind::abind(x$epi.curve, 
+                                 y$epi.curve, 
+                                 along=3),
           wait.time=abind::abind(x$wait.time, 
                                  y$wait.time, 
-                                 along=3))
+                                 along=3)
+     )
 }
 
 ##' Combine TSIR scenarios containing both gravity model types 
@@ -1632,19 +1641,25 @@ sim.combine.dual <- function(x,
                              y
 ){
      list(
-          B=list(tot.inf=abind::abind(x$B$tot.inf, 
-                                      y$B$tot.inf, 
+          B=list(
+               tot.inf=rbind(x$B$tot.inf, 
+                             y$B$tot.inf),
+               epi.curve=abind::abind(x$B$epi.curve, 
+                                      y$B$epi.curve, 
                                       along=3),
-                 wait.time=abind::abind(x$B$wait.time, 
-                                        y$B$wait.time, 
-                                        along=3)),
-          
-          R=list(tot.inf=abind::abind(x$R$tot.inf, 
-                                      y$R$tot.inf, 
+               wait.time=abind::abind(x$B$wait.time, 
+                                      y$B$wait.time, 
+                                      along=3)),
+          R=list(
+               tot.inf=rbind(x$R$tot.inf, 
+                             y$R$tot.inf),
+               epi.curve=abind::abind(x$R$epi.curve, 
+                                      y$R$epi.curve, 
                                       along=3),
-                 wait.time=abind::abind(x$R$wait.time, 
-                                        y$R$wait.time, 
-                                        along=3))
+               wait.time=abind::abind(x$R$wait.time, 
+                                      y$R$wait.time, 
+                                      along=3)
+          )
      )
 }
 
@@ -1725,7 +1740,8 @@ sim.TSIR.full <- function(
           rho.hat <- sim.rho(p=prop.remain, level='route')
           tau.hat <- sim.tau(prop.leave)
           
-          B.tot.inf <- R.tot.inf <- array(NA, dim=c(length(districts), max.t, 0))
+          B.tot.inf <- R.tot.inf <- vector()
+          B.epi.curve <- R.epi.curve <- array(NA, dim=c(length(districts), max.t, 0))
           B.wait.time <- R.wait.time <- array(NA, dim=c(length(districts), max.t, 0))
           
           for (j in 1:N.sim2) {
@@ -1743,7 +1759,8 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                           
                )
                
-               B.tot.inf <- abind::abind(B.tot.inf, sim$tsir[,'I',], along=3)
+               B.tot.inf <- rbind(B.tot.inf, sim$tot.inf)
+               B.epi.curve <- abind::abind(B.epi.curve, sim$tsir[,'I',], along=3)
                B.wait.time <- abind::abind(B.wait.time, sim$wait.time, along=3)
                
                # Gravity model with duration
@@ -1762,14 +1779,17 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                         
                )
                
-               R.tot.inf <- abind::abind(R.tot.inf, sim$tsir[,'I',], along=3)
+               R.tot.inf <- rbind(R.tot.inf, sim$tot.inf)
+               R.epi.curve <- abind::abind(R.epi.curve, sim$tsir[,'I',], along=3)
                R.wait.time <- abind::abind(R.wait.time, sim$wait.time, along=3)
           }
           
           list(
                B=list(tot.inf=B.tot.inf,
+                      epi.curve=B.epi.curve,
                       wait.time=B.wait.time),
                R=list(tot.inf=R.tot.inf,
+                      epi.curve=R.epi.curve,
                       wait.time=R.wait.time)
           )
      }
