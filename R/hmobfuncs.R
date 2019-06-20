@@ -1878,3 +1878,130 @@ calc.hpd <- function(x) {
      return(out)
 }
 
+##' Calculate proportion infected in each district
+##'
+##' This function takes the output from a TSIR simulation and calculates the mean 
+##' proportion infected in each district.
+##' 
+##' @param x matrix of total infected for all districts in simulation 
+##' @param N vector of population size of each district
+##' 
+##' @return a dataframe
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/calc_prop_inf.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+calc.prop.inf <- function(
+     x, # matrix of total infected for all districts in simulation
+     N  # population size of each district
+) {
+     for(i in 1:ncol(x)) x[,i] <- x[,i]/N[i]
+     return(apply(x, 2, mean))
+}
+
+##' Calculate peak timing of introduction and proportion infected
+##'
+##' This function takes the output from a TSIR simulation and calculates the peak of the waiting time
+##' distribution and the mean proportion infected in each district.
+##' 
+##' @param sim simulation object containing simulations with both basic gravity and gravity with duration
+##' @param N vector of population size of each district
+##' @param pathogen name of pathogen
+##' @param intro type of introduction
+##' 
+##' @return a longform dataframe to use for plotting
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/calc_timing_magnitude.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+calc.timing.magnitude <- function(
+     sim,          # simulation object containing simulations with both basic gravity and gravity with duration
+     N,            # population size of each district
+     pathogen,     # name of pathogen
+     intro         # type of introduction
+) {
+     
+     districts <- colnames(sim$B$tot.inf)
+     N <- N[which(N$ID %in% districts), 'N']
+     
+     # Calculate mean proportion infected in each district
+     prop.inf.basic <- calc.prop.inf(sim$B$tot.inf, N=N)
+     wait.time.basic <- (calc.hpd(calc.wait.time(sim$B$wait.time))$max)
+     
+     prop.inf.duration <- calc.prop.inf(sim$R$tot.inf, N=N)
+     wait.time.duration <- (calc.hpd(calc.wait.time(sim$R$wait.time))$max)
+     
+     out <- rbind(
+          data.frame(district=districts,
+                     pathogen=pathogen,
+                     intro=intro,
+                     model='B',
+                     prop.inf=prop.inf.basic,
+                     wait.time=wait.time.basic),
+          
+          data.frame(district=districts,
+                     pathogen=pathogen,
+                     intro=intro,
+                     model='R',
+                     prop.inf=prop.inf.duration,
+                     wait.time=wait.time.duration)
+     )
+     
+     row.names(out) <- NULL
+     return(out)
+}
+
+##' Load .Rdata file to an object
+##'
+##' This function a .Rdata file and loads the first item into the current environment as an object.
+##' 
+##' @param file filepath to .Rdata object
+##' 
+##' @return an R object
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/load_object.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+load.obj <- function(file) {
+     tmp <- new.env()
+     load(file=file, envir=tmp)
+     tmp[[ls(tmp)[1]]]
+}
+
+##' Get legend from ggplot object
+##'
+##' This function returns the legend of a ggplot object.
+##' 
+##' @param x a ggplot object with a legend
+##' 
+##' @return ggplot object
+##' 
+##' @author John Giles
+##' 
+##' @export
+##' 
+
+get.legend <- function(
+     x # a ggplot object with a legend
+){
+     x <- ggplot_gtable(ggplot_build(x))
+     return(x$grobs[[which(sapply(x$grobs, function(y) y$name) == "guide-box")]])
+}

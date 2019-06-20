@@ -36,8 +36,10 @@ p.var <- apply(p, 2, var, na.rm=TRUE)
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
+  \code{\link{calc.prop.inf}},
+  \code{\link{calc.timing.magnitude}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
-  \code{\link{get.beta.params}},
+  \code{\link{get.beta.params}}, \code{\link{load.obj}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},
   \code{\link{sim.combine}}, \code{\link{sim.lambda}},
