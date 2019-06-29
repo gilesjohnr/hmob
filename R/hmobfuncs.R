@@ -918,6 +918,7 @@ mob.data.array.pop.level <- function(x,              # output from mob.data.arra
      return(x)
 }
 
+
 ##' Get posterior parameter estimates from a model object
 ##' 
 ##' A function to build a matrix or dataframe of parameter estimates in a \code{runjags} or \code{coda} model object.
@@ -964,10 +965,9 @@ get.param.vals <- function(
                                     from=i,
                                     to=j,
                                     mean=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean'],
-                                    median=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Median'],
                                     sd=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD'],
-                                    lo95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Lower95'],
-                                    hi95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Upper95'])
+                                    lo95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '2.5%'],
+                                    hi95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '97.5%'])
                     }
           }
           
@@ -979,12 +979,6 @@ get.param.vals <- function(
                          stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean']
                     }
                
-              out.median <- foreach(i=1:n.districts, .combine='rbind') %:%
-                    foreach(j=1:n.districts, .combine='c') %dopar% {
-                         
-                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Median']
-                    } 
-               
                out.sd <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
@@ -994,17 +988,17 @@ get.param.vals <- function(
                out.lo95 <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Lower95']
+                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '2.5%']
                     } 
                
                out.hi95 <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Upper95']
+                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '97.5%']
                     } 
                
-               dimnames(out.mean) <- dimnames(out.median) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
-               out <- list(mean=out.mean, median=out.median, sd=out.sd, lo95=out.lo95, hi95=out.hi95)
+               dimnames(out.mean) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
+               out <- list(mean=out.mean, sd=out.sd, lo95=out.lo95, hi95=out.hi95)
           }
      } else if (level == 'month') {
           if (type == 'dataframe') {
@@ -1020,10 +1014,9 @@ get.param.vals <- function(
                                     to=j,
                                     month=t,
                                     mean=stats[which(row.names(stats) == sel), 'Mean'],
-                                    median=stats[which(row.names(stats) == sel), 'Median'],
                                     sd=stats[which(row.names(stats) == sel), 'SD'],
-                                    lo95=stats[which(row.names(stats) == sel), 'Lower95'],
-                                    hi95=stats[which(row.names(stats) == sel), 'Upper95'],)
+                                    lo95=stats[which(row.names(stats) == sel), '2.5%'],
+                                    hi95=stats[which(row.names(stats) == sel), '97.5%'],)
                     }
           }
           
@@ -1036,15 +1029,6 @@ get.param.vals <- function(
                          sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
                          
                          stats[which(row.names(stats) == sel), 'Mean']
-                    }
-               
-               out.median <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
-                    foreach(i = 1:n.districts, .combine='rbind', .multicombine=TRUE) %:% 
-                    foreach(j = 1:n.districts, .combine='c', .multicombine=TRUE) %dopar% {
-                         
-                         sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
-                         
-                         stats[which(row.names(stats) == sel), 'Median']
                     }
                
                out.sd <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
@@ -1062,7 +1046,7 @@ get.param.vals <- function(
                          
                          sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
                          
-                         stats[which(row.names(stats) == sel), 'Lower95']
+                         stats[which(row.names(stats) == sel), '2.5%']
                     }
                
                out.hi95 <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
@@ -1071,11 +1055,11 @@ get.param.vals <- function(
                          
                          sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
                          
-                         stats[which(row.names(stats) == sel), 'Upper95']
+                         stats[which(row.names(stats) == sel), '97.5%']
                     }
                
-               dimnames(out.mean) <- dimnames(out.median) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
-               out <- list(mean=out.mean, median=out.median, sd=out.sd, lo95=out.lo95, hi95=out.hi95)
+               dimnames(out.mean) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
+               out <- list(mean=out.mean, sd=out.sd, lo95=out.lo95, hi95=out.hi95)
           }
      }
      
@@ -1798,7 +1782,7 @@ sim.TSIR.full <- function(
      return(out)
 }
 
-##' Aggregate simulated waiting time distributions
+##' Calculate aggregate waiting time distribution
 ##'
 ##' This function aggregates the all simulated waiting time distributions into a single probability density for each district. 
 ##' The method uses a simple linear combination of waiting time probabilities, sometimes referred to as the 'linear opinion pool'.
@@ -1838,9 +1822,11 @@ calc.wait.time <- function(x) {
 ##'
 ##' This function calculates the highest posterior density (HPD) interval for the aggregated 
 ##' waiting time distributions returned by the \code{\link{calc.wait.time}} function. The function 
-##' calculates the maximum of each aggregated probability distribution along with its 50 and 95 percent HPD.
+##' calculates the maximum of each aggregated probability distribution along with its 50 and 95 percent HPD. 
+##' Code adapted from the \code{hpd} function in the \code{TeachingDemos} package.
 ##' 
 ##' @param x aggregated waiting time distributions for each district (output from \code{\link{calc.wait.time}})
+##' @param ci a scalar or vector giving the intervals for which the highest posterior density should be calculated (default = 0.95)
 ##' 
 ##' @return a dataframe
 ##' 
@@ -1853,29 +1839,35 @@ calc.wait.time <- function(x) {
 ##' @export
 ##' 
 
-calc.hpd <- function(x) {
+calc.hpd <- function(x, ci=0.95) {
      
      districts <- dimnames(x)[[1]]
      
-     out <- foreach (i=1:length(districts), .combine=rbind) %do% {
+     out <- foreach (i=seq_along(districts), .combine='rbind') %do% {
           
-          # Sample probabilites and calc cumulative density
-          samp <- sample(x[i,], 1e6, replace = TRUE, prob=x[i,]) 
-          cumdens <- cumsum(x[i,]) / sum(x[i,])
+          time.steps <- as.numeric(names(x[i,]))
+          samp <- sample(time.steps, 1e4, replace = TRUE, prob=x[i,]) 
           
-          # Highest posterior density boundaries
-          data.frame(
-               district=districts[i],
-               max=which(x[i,] == max(x[i,])),
-               lo50=which(cumdens >= 0.25)[1]-1,
-               hi50=which(cumdens >= 0.75)[1],
-               lo95=which(cumdens >= 0.025)[1]-1,  
-               hi95=which(cumdens >= 0.975)[1]
-          )
-     } 
+          # Calculate 50% and 95% highest posterior density
+          out <- foreach(j=seq_along(ci), .combine='cbind') %do% {
+               
+               samp <- sort(samp)  # order sample for CDF
+               n <- length(samp)   # length of sample
+               tails <- (1-ci[j]) # HPD interval tails
+               
+               cutoff <- round(n*tails)   # index of gross cutoff
+               tmp <- samp[(n-cutoff+1):n] - samp[1:cutoff] # exact cutoff
+               cutoff2 <- which(tmp == min(tmp))[1] 
+               
+               out <- data.frame(samp[cutoff2], samp[n-cutoff+cutoff2]) 
+               colnames(out) <- c(paste('lo', ci[j]*100, sep=''), paste('hi', ci[j]*100, sep=''))
+               out
+          }
+          
+          cbind(max=time.steps[which(x[i,] == max(x[i,]))], out)
+     }
      
-     row.names(out) <- NULL
-     return(out)
+     return(cbind(as.data.frame(districts), out))
 }
 
 ##' Calculate proportion infected in each district

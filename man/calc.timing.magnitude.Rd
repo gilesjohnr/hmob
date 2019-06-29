@@ -16,7 +16,7 @@ calc.timing.magnitude(sim, N, pathogen, intro)
 \item{intro}{type of introduction}
 }
 \value{
-a lognform dataframe to use for plotting
+a longform dataframe to use for plotting
 }
 \description{
 This function takes the output from a TSIR simulation and calculates the peak of the waiting time
