@@ -20,7 +20,8 @@ month-level---to a route-level data array. The route-level array contains the me
 months.
 }
 \seealso{
-Other model processing: \code{\link{get.param.vals}},
+Other model processing: \code{\link{calc.decay.stats}},
+  \code{\link{get.param.vals}},
   \code{\link{mob.data.array.pop.level}}
 }
 \author{

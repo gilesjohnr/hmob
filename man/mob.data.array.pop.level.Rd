@@ -20,7 +20,8 @@ month-level---to a vector giving the population mean. The population-level vecto
 value of the response variable across all routes and months.
 }
 \seealso{
-Other model processing: \code{\link{get.param.vals}},
+Other model processing: \code{\link{calc.decay.stats}},
+  \code{\link{get.param.vals}},
   \code{\link{mob.data.array.route.level}}
 }
 \author{

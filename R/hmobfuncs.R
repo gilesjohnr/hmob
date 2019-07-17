@@ -954,6 +954,11 @@ get.param.vals <- function(
      n.cores=2
 ) {
      
+     mean.labs <- c('Mean', 'mean')
+     sd.labs <- c('SD', 'sd')
+     lo95.labs <- c('Lower95', '2.5%')
+     hi95.labs <- c('Upper95', '97.5%')
+     
      registerDoParallel(cores=n.cores)
      
      if (level == 'route') {
@@ -961,13 +966,15 @@ get.param.vals <- function(
                out <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='rbind') %dopar% {
                          
-                         data.frame(name=paste(name, '[', i, ',', j, ']', sep=''),
+                         sel <- paste(name, '[', i, ',', j, ']', sep='')
+                         
+                         data.frame(name=sel,
                                     from=i,
                                     to=j,
-                                    mean=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean'],
-                                    sd=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD'],
-                                    lo95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '2.5%'],
-                                    hi95=stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '97.5%'])
+                                    mean=stats[row.names(stats) == sel, colnames(stats) %in% mean.labs],
+                                    sd=stats[row.names(stats) == sel, colnames(stats) %in% sd.labs],
+                                    lo95=stats[row.names(stats) == sel, colnames(stats) %in% lo95.labs],
+                                    hi95=stats[row.names(stats) == sel, colnames(stats) %in% hi95.labs])
                     }
           }
           
@@ -976,25 +983,25 @@ get.param.vals <- function(
                out.mean <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'Mean']
+                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% mean.labs]
                     }
                
                out.sd <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), 'SD']
+                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% mean.labs]
                     }
                
                out.lo95 <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '2.5%']
+                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% mean.labs]
                     } 
                
                out.hi95 <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[which(row.names(stats) == paste(name, '[', i, ',', j, ']', sep='')), '97.5%']
+                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% mean.labs]
                     } 
                
                dimnames(out.mean) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
@@ -1013,10 +1020,10 @@ get.param.vals <- function(
                                     from=i,
                                     to=j,
                                     month=t,
-                                    mean=stats[which(row.names(stats) == sel), 'Mean'],
-                                    sd=stats[which(row.names(stats) == sel), 'SD'],
-                                    lo95=stats[which(row.names(stats) == sel), '2.5%'],
-                                    hi95=stats[which(row.names(stats) == sel), '97.5%'],)
+                                    mean=stats[row.names(stats) == sel, colnames(stats) %in% c('Mean', 'mean')],
+                                    sd=stats[row.names(stats) == sel, colnames(stats) %in% c('SD', 'sd')],
+                                    lo95=stats[row.names(stats) == sel, colnames(stats) %in% c('Lower95', '2.5%')],
+                                    hi95=stats[row.names(stats) == sel, colnames(stats) %in% c('Upper95', '97.5%')],)
                     }
           }
           
@@ -1028,7 +1035,7 @@ get.param.vals <- function(
                          
                          sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
                          
-                         stats[which(row.names(stats) == sel), 'Mean']
+                         stats[row.names(stats) == sel, colnames(stats) %in% mean.labs]
                     }
                
                out.sd <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
@@ -1037,7 +1044,7 @@ get.param.vals <- function(
                          
                          sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
                          
-                         stats[which(row.names(stats) == sel), 'SD']
+                         stats[row.names(stats) == sel, colnames(stats) %in% sd.labs]
                     }
                
                out.lo95 <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
@@ -1046,7 +1053,7 @@ get.param.vals <- function(
                          
                          sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
                          
-                         stats[which(row.names(stats) == sel), '2.5%']
+                         stats[row.names(stats) == sel, colnames(stats) %in% lo95.labs]
                     }
                
                out.hi95 <- foreach(t = 1:n.t, .combine=function(a, b) abind(a, b, along=3)) %:% 
@@ -1055,7 +1062,7 @@ get.param.vals <- function(
                          
                          sel <- paste(name, '[', i, ',', j, ',', t, ']', sep='')
                          
-                         stats[which(row.names(stats) == sel), '97.5%']
+                         stats[row.names(stats) == sel, colnames(stats) %in% hi95.labs]
                     }
                
                dimnames(out.mean) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
@@ -1157,10 +1164,10 @@ get.beta.params <- function(m, v) {
 ##' Exponential decay function
 ##'
 ##' This function calculates exponential decay of a data value \code{y} (e.g. trip duration)
-##' given the intercept \eqn{\alpha} and decay rate \eqn{\lambda} parameters using the functional form:
-##' \eqn{N(y) = \alpha exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
+##' given the intercept \eqn{N0} and decay rate \eqn{\lambda} parameters using the functional form:
+##' \eqn{N(y) = N0 exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
 ##' 
-##' @param alpha intercept (baseline number of expected trips at \eqn{y=0})
+##' @param N0 intercept (baseline number of expected trips at \eqn{y=0})
 ##' @param lambda decay rate
 ##' @param y a scalar or vector giving the data value(s) (e.g. trip duration)
 ##' 
@@ -1173,11 +1180,11 @@ get.beta.params <- function(m, v) {
 ##' @export
 ##' 
 
-decay.func <- function(alpha,       # intercept (baseline number of expected trips at \eqn{y=0})
+decay.func <- function(N0,       # intercept (baseline number of expected trips at \eqn{y=0})
                        lambda,     # decay rate parameter
                        y           # data value duration (integer representing days)
 ) {
-     alpha * exp(-lambda*y)
+     N0 * exp(-lambda*y)
 }
 
 ##' Simulate connectivity matrix (pi)
@@ -1996,4 +2003,97 @@ get.legend <- function(
 ){
      x <- ggplot_gtable(ggplot_build(x))
      return(x$grobs[[which(sapply(x$grobs, function(y) y$name) == "guide-box")]])
+}
+
+##' Calculate model summary and validation statistics for trip duration decay model
+##'
+##' This function takes the output from a the \code{jags.model} function and calculates summaries of
+##' the posterior parameter estimates, convergence diagnostics, and sample sizes for each route.
+##' 
+##' @param x JAGS model object
+##' @param y.route matrix of route-level trip duration counts
+##' @param districts vector of district names
+##' @param pop.dens vector of district population densites
+##' @param dist.mat distance matrix
+##' 
+##' @return a list containing a dataframe of parameter estimates and diagnostics, and a matrix of actual and predicted trip duration counts
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/calc_decay_stats.R
+##'
+##' @family model processing
+##' 
+##' @export
+##' 
+
+calc.decay.stats <- function(
+     x,              # JAGS model object
+     y.route,        # matrix of route-level 
+     districts,      # vector of districts
+     pop.dens,       # vector of district population densites
+     dist.mat        # distance matrix
+) {
+     
+     if(!(identical(length(districts), length(pop.dens), nrow(dist.mat), nrow(y.route)))) {
+          stop("Dimensions of arguments must match.")
+     }
+     
+     x <- MCMCvis::MCMCsummary(as.mcmc.list(x), n.eff=TRUE)
+     
+     x <- data.frame(name=row.names(x), as.data.frame(x), row.names=NULL)[,-5]
+     x$mape <- x$mae <- x$r <- x$samp.size <- x$dest.dens <- x$orig.dens <- x$distance <- x$destination <- x$origin <- NA
+     colnames(x)[c(4:6)] <- c('lo95', 'hi95', 'psrf')
+     
+     err <- matrix(ncol=4, nrow=0)
+     
+     for (i in seq_along(districts)) {
+          for (j in seq_along(districts)) {
+               
+               sel <- which(x$name == paste('lambda[', i, ',', j, ']', sep=''))
+               
+               if (i == j) {
+                    
+                    x[sel, -1] <- NA
+                    
+               } else {
+                    
+                    x$origin[sel] <- districts[i]
+                    x$destination[sel] <- districts[j]
+                    x$distance[sel] <- dist.mat[i,j]
+                    x$orig.dens[sel] <- pop.dens[i]
+                    x$dest.dens[sel] <- pop.dens[j]
+                    x$samp.size[sel] <- sum(!is.na(y.route[i,j,]))
+                    
+                    tmp <- decay.func(N0=y.route[i,j,1], 
+                                      lambda=x$mean[sel], 
+                                      y=1:length(y.route[i,j,]))
+                    
+                    tmp <- cbind(tmp, y.route[i,j,])
+                    tmp <- matrix(tmp[complete.cases(tmp),], ncol=2)
+                    
+                    x$mae[sel] <- Metrics::mae(tmp[,2], tmp[,1])
+                    x$mape[sel] <- Metrics::mape(tmp[,2], tmp[,1])
+                    
+                    err <- rbind(err, 
+                                 cbind(tmp[,2], 
+                                       tmp[,1], 
+                                       Metrics::ape(tmp[,2], tmp[,1]),
+                                       rep(x$samp.size[sel], nrow(tmp))
+                                 )
+                    )
+                    
+                    if (nrow(tmp) < 5) {
+                         
+                         x$r[sel] <- NA
+                         
+                    } else {
+                         
+                         x$r[sel] <- cor.test(tmp[,1], tmp[,2], na.rm=T)$estimate
+                    }
+               }
+          }
+     }
+     
+     return(list(mod.decay=x, ae=err))
 }

@@ -4,10 +4,10 @@
 \alias{decay.func}
 \title{Exponential decay function}
 \usage{
-decay.func(alpha, lambda, y)
+decay.func(N0, lambda, y)
 }
 \arguments{
-\item{alpha}{intercept (baseline number of expected trips at \eqn{y=0})}
+\item{N0}{intercept (baseline number of expected trips at \eqn{y=0})}
 
 \item{lambda}{decay rate}
 
@@ -18,8 +18,8 @@ A scalar or vector of \eqn{N(y)}
 }
 \description{
 This function calculates exponential decay of a data value \code{y} (e.g. trip duration)
-given the intercept \eqn{\alpha} and decay rate \eqn{\lambda} parameters using the functional form:
-\eqn{N(y) = \alpha exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
+given the intercept \eqn{N0} and decay rate \eqn{\lambda} parameters using the functional form:
+\eqn{N(y) = N0 exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
