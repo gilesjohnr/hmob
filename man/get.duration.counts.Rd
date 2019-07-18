@@ -64,11 +64,13 @@ title(get.names(orig, dest), outer=T, line=-3, cex=2)
 }
 \seealso{
 Other data synthesis: \code{\link{calc.prop.route.type}},
+  \code{\link{calc.samp.size}},
   \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},
   \code{\link{get.district.names.xy}},
   \code{\link{get.district.pop}},
-  \code{\link{get.holidays}}, \code{\link{get.xy.counts}},
+  \code{\link{get.holidays}}, \code{\link{get.subsamp}},
+  \code{\link{get.xy.counts}},
   \code{\link{mob.data.array}},
   \code{\link{parse.longform}}
 }

@@ -1966,6 +1966,7 @@ calc.timing.magnitude <- function(
 ##'
 ##' This function a .Rdata file and loads the first item into the current environment as an object.
 ##' 
+##' @param x the index corresponding to the desired object (default = 1)
 ##' @param file filepath to .Rdata object
 ##' 
 ##' @return an R object
@@ -1979,10 +1980,10 @@ calc.timing.magnitude <- function(
 ##' @export
 ##' 
 
-load.obj <- function(file) {
+load.obj <- function(x=1, file) {
      tmp <- new.env()
      load(file=file, envir=tmp)
-     tmp[[ls(tmp)[1]]]
+     tmp[[ls(tmp)[x]]]
 }
 
 ##' Get legend from ggplot object
@@ -2096,4 +2097,91 @@ calc.decay.stats <- function(
      }
      
      return(list(mod.decay=x, ae=err))
+}
+
+##' Get the sample size of a route-level \code{mob.data.array} matrix object
+##'
+##' This function takes the output from a the \code{mob.data.array.route.level} function and calculates
+##' the sample size of observations for each \eqn{ij} route.
+##' 
+##' @param x a three dimensional array produced by the \code{mob.data.array.route.level} function 
+##' 
+##' @return a matrix of sample sizes for each \eqn{ij} route
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/calc_samp_size.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+calc.samp.size <- function(x) {
+     
+     n.districts <- dim(x)[1]
+     
+     out <- foreach(i=1:n.districts, .combine='rbind') %:%
+          foreach(j=1:n.districts, .combine='c') %do% {
+               
+               if (i == j) {
+                    tmp <- NA
+               } else {
+                    tmp <- sum(!is.na(x[i,j,]))
+               }
+               tmp
+          }
+     
+     dimnames(out) <- dimnames(x)[1:2]
+     return(out)
+}
+
+##' Find the subset of districts which have a minumim number of samples
+##'
+##' This function takes the output from a the \code{mob.data.array.route.level} function and finds the 
+##' largest subset of locations (districts) that have a minumum number of observations for all \eqn{ij} routes. The subset
+##' is found by sequentially removing the location with the largest number of routes below the defined 
+##' threshold (\code{min.samp}) until all locations contain at least \code{min.samp} number of observations for each route.
+##' 
+##' @param x a three dimensional array produced by the \code{mob.data.array.route.level} function 
+##' @param min.locations minimum number of locations (rows and columns) to keep
+##' @param min.samp minimum sample size
+##' 
+##' @return a three dimensional array containing the subset of \code{x}
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_subsamp.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+get.subsamp <- function(
+     x,              # y.route route-level data array
+     min.locations,  # minimum number of locations (rows and columns) to keep
+     min.samp        # minumum sample size
+) {
+     
+     n.districts <- dim(x)[1]
+     samp.size <- calc.samp.size(x)
+     
+     for (i in 1:(n.districts - min.locations)) {
+          
+          if (all(as.vector(samp.size) >= min.samp, na.rm=TRUE)) break
+          
+          tmp <- vector()
+          for (j in 1:nrow(samp.size)) {
+               
+               tmp <- c(tmp, sum(sum(samp.size[,j] < min.samp, na.rm=TRUE), 
+                                 sum(samp.size[j,] < min.samp, na.rm=TRUE)))
+          }
+          
+          lose <- which(tmp == max(tmp))
+          samp.size <- samp.size[-lose, -lose]
+     }
+     
+     sel <- dimnames(x)$origin %in% dimnames(samp.size)$origin
+     return(x[sel,sel,])
 }

@@ -4,9 +4,11 @@
 \alias{load.obj}
 \title{Load .Rdata file to an object}
 \usage{
-load.obj(file)
+load.obj(x = 1, file)
 }
 \arguments{
+\item{x}{the index corresponding to the desired object (default = 1)}
+
 \item{file}{filepath to .Rdata object}
 }
 \value{
