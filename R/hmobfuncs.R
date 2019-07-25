@@ -897,7 +897,7 @@ mob.data.array.route.level <- function(x,              # output from mob.data.ar
 ##' 
 
 mob.data.array.pop.level <- function(x,              # output from mob.data.array function
-                                      variable        # 'distance' or 'duration'
+                                     variable        # 'distance' or 'duration'
 ){
      
      if (variable == 'distance') {
@@ -926,8 +926,8 @@ mob.data.array.pop.level <- function(x,              # output from mob.data.arra
 ##' for route-level (\eqn{ij}) or month-level (\eqn{ijt}).
 ##' 
 ##' @param n.districts Number of districts in model
-##' @param n.t Number of months or other time inteval (default = 12)
-##' @param name Name of the parameter (default = \code{lambda_1})
+##' @param n.t Number of months or other time interval
+##' @param name Name of the parameter as it is in the model output
 ##' @param level The hierarchical level of the model that correpsonds to \code{name} (e.g. 'route' or 'month')
 ##' @param stats Expects statistics output of \code{\link{coda::summary}} function. If model out put is a \code{runjags} 
 ##' object, this can be given by: \code{summary(as.mcmc.list(out))$statistics}
@@ -938,6 +938,8 @@ mob.data.array.pop.level <- function(x,              # output from mob.data.arra
 ##' If level = 'month', a list containing two 3-dimensional arrays named \code{mean} and \code{sd}.
 ##' 
 ##' @author John Giles
+##' 
+##' @example R/examples/get_param_vals.R
 ##'
 ##' @family model processing
 ##' 
@@ -946,9 +948,9 @@ mob.data.array.pop.level <- function(x,              # output from mob.data.arra
 
 get.param.vals <- function(
      n.districts,          # number of districts
-     n.t=12,               # number of months or other time inteval
-     name='lambda_1',      # name of variable
-     level='route',
+     n.t,                  # number of time intervals (months, defaults to 12)
+     name,                 # name of variable
+     level='route',        # only route or month at this point
      stats,                # expects statistics output of coda::summary function
      type='matrix',        # 'matrix' or 'dataframe' format to return parameter values (default = 'matrix')
      n.cores=2
@@ -1008,6 +1010,9 @@ get.param.vals <- function(
                out <- list(mean=out.mean, sd=out.sd, lo95=out.lo95, hi95=out.hi95)
           }
      } else if (level == 'month') {
+          
+          if (is.null(n.t)) n.t <- 12 # will need to change to make other time levels possible
+          
           if (type == 'dataframe') {
                
                out <- foreach(t = 1:n.t, .combine='rbind') %:% 

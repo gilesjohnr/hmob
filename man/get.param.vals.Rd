@@ -4,15 +4,15 @@
 \alias{get.param.vals}
 \title{Get posterior parameter estimates from a model object}
 \usage{
-get.param.vals(n.districts, n.t = 12, name = "lambda_1",
-  level = "route", stats, type = "matrix", n.cores = 2)
+get.param.vals(n.districts, n.t, name, level = "route", stats,
+  type = "matrix", n.cores = 2)
 }
 \arguments{
 \item{n.districts}{Number of districts in model}
 
-\item{n.t}{Number of months or other time inteval (default = 12)}
+\item{n.t}{Number of months or other time interval}
 
-\item{name}{Name of the parameter (default = \code{lambda_1})}
+\item{name}{Name of the parameter as it is in the model output}
 
 \item{level}{The hierarchical level of the model that correpsonds to \code{name} (e.g. 'route' or 'month')}
 
@@ -31,6 +31,18 @@ If level = 'month', a list containing two 3-dimensional arrays named \code{mean}
 A function to build a matrix or dataframe of parameter estimates in a \code{runjags} or \code{coda} model object.
 The function gets the mean, median, standard deviation, and lower and upper 95 % confidence intervals of the estimated posterior distribution 
 for route-level (\eqn{ij}) or month-level (\eqn{ijt}).
+}
+\examples{
+load('./output/decay_1day_62dists_summary.Rdata')  # mod.decay # Summary of decay model parameters (Lambda)
+
+# Get trip duration decay rate rate parameter lambda
+lam <- get.param.vals(n.districts=62, 
+                      name='lambda',
+                      level='route',
+                      stats=mod.decay,
+                      n.cores=4)
+
+see(lam$mean)
 }
 \seealso{
 Other model processing: \code{\link{calc.decay.stats}},
