@@ -30,7 +30,8 @@ lines(agg2[1,], col='red', cex=2)
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
-  \code{\link{calc.prop.inf}}, \code{\link{calc.p}},
+  \code{\link{calc.prop.inf}},
+  \code{\link{calc.prop.remain}},
   \code{\link{calc.timing.magnitude}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
   \code{\link{load.obj}}, \code{\link{sim.TSIR.full}},

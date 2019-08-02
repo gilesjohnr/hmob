@@ -2,8 +2,8 @@
 
 export(calc.decay.stats)
 export(calc.hpd)
-export(calc.p)
 export(calc.prop.inf)
+export(calc.prop.remain)
 export(calc.prop.route.type)
 export(calc.samp.size)
 export(calc.timing.magnitude)

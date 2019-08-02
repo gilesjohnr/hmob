@@ -20,7 +20,8 @@ using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
-  \code{\link{calc.prop.inf}}, \code{\link{calc.p}},
+  \code{\link{calc.prop.inf}},
+  \code{\link{calc.prop.remain}},
   \code{\link{calc.timing.magnitude}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
   \code{\link{load.obj}}, \code{\link{sim.TSIR.full}},

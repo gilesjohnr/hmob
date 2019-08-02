@@ -23,7 +23,8 @@ given the intercept \eqn{N0} and decay rate \eqn{\lambda} parameters using the f
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
-  \code{\link{calc.prop.inf}}, \code{\link{calc.p}},
+  \code{\link{calc.prop.inf}},
+  \code{\link{calc.prop.remain}},
   \code{\link{calc.timing.magnitude}},
   \code{\link{calc.wait.time}},
   \code{\link{get.beta.params}}, \code{\link{load.obj}},

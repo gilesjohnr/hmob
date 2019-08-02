@@ -1081,7 +1081,7 @@ get.param.vals <- function(
 
 ##' Proportion of individuals remaining for full epidemic generation
 ##'
-##' This function calculates the proportion of individuals that remain a location for
+##' This function calculates the proportion of individuals that remain in a location for
 ##' all of epidemic generation \eqn{n}. The value is represented by the variable \eqn{p_jt}, which
 ##' is defined as the effective probability if individuals that stay for a full epidemic generation 
 ##' when they travel to destination \eqn{j} at time \eqn{t}:\cr
@@ -1096,15 +1096,15 @@ get.param.vals <- function(
 ##' 
 ##' @author John Giles
 ##' 
-##' @example R/examples/calc_p.R
+##' @example R/examples/calc_prop_remain.R
 ##'
 ##' @family simulation
 ##' 
 ##' @export
 ##' 
 
-calc.p <- function(d,       # 4D data array produced by the mob.data.array function
-                   gen.t    # interval used to define the epidemic generation
+calc.prop.remain <- function(d,       # 4D data array produced by the mob.data.array function
+                             gen.t    # interval used to define the epidemic generation
 ) {
      
      if (is.null(dimnames(d)$duration)) {
@@ -2048,10 +2048,10 @@ calc.decay.stats <- function(
      x <- MCMCvis::MCMCsummary(as.mcmc.list(x), n.eff=TRUE)
      
      x <- data.frame(name=row.names(x), as.data.frame(x), row.names=NULL)[,-5]
-     x$mape <- x$mae <- x$r <- x$samp.size <- x$dest.dens <- x$orig.dens <- x$distance <- x$destination <- x$origin <- NA
+     x$smape <- x$mape <- x$mae <- x$r <- x$samp.size <- x$dest.dens <- x$orig.dens <- x$distance <- x$destination <- x$origin <- NA
      colnames(x)[c(4:6)] <- c('lo95', 'hi95', 'psrf')
      
-     err <- matrix(ncol=4, nrow=0)
+     err <- vector()
      
      for (i in seq_along(districts)) {
           for (j in seq_along(districts)) {
@@ -2080,6 +2080,7 @@ calc.decay.stats <- function(
                     
                     x$mae[sel] <- Metrics::mae(tmp[,2], tmp[,1])
                     x$mape[sel] <- Metrics::mape(tmp[,2], tmp[,1])
+                    x$smape[sel] <- Metrics::smape(tmp[,2], tmp[,1])
                     
                     err <- rbind(err, 
                                  cbind(tmp[,2], 
