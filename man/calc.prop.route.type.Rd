@@ -38,7 +38,8 @@ boxplot.matrix(as.matrix(test[,2:5]), col='lightblue')
 
 }
 \seealso{
-Other data synthesis: \code{\link{calc.samp.size}},
+Other data synthesis: \code{\link{calc.prop.tot.trips}},
+  \code{\link{calc.samp.size}},
   \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},
   \code{\link{get.district.names.xy}},

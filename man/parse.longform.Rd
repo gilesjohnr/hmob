@@ -34,6 +34,7 @@ Sys.time() - t
 }
 \seealso{
 Other data synthesis: \code{\link{calc.prop.route.type}},
+  \code{\link{calc.prop.tot.trips}},
   \code{\link{calc.samp.size}},
   \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},

@@ -1087,12 +1087,18 @@ get.param.vals <- function(
 ##' when they travel to destination \eqn{j} at time \eqn{t}:\cr
 ##' \cr
 ##' \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
+##' \cr
+##' Because the Namibia mobility data spans 4 years there are many potential time intervals for which to calculate 
+##' the proportion of individuals remaining for full epidemic generation. The \code{sub.samp} argument randomly 
+##' selects X number of these generations to reduce computation time.
 ##' 
-##' @param d a four-dimensional array containing counts of trip durations produced by the \code{\link{mob.data.array}} function. 
-##' Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)
+##' @param d a three- or four-dimensional array containing route- or month-level trip duration counts produced by the \code{\link{mob.data.array}} function. 
+##' Note that \code{calc.prop.remain} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)
 ##' @param gen.t the time interval in days used to define the epidemic generation
+##' @param sub.samp scalar indicating the number of generations to subsample, if NULL (default), will use all observed generation times in the data (which will increase computation time for large numbers of locations)
 ##' 
-##' @return A 4-dimensional array with values between 0 and 1
+##' @return if \code{d} is a month-level duration data array, then a 4D array with values between 0 and 1 is returned. If \code{d} is a route-level duration data array, 
+##' then returns a 3D array is returned.
 ##' 
 ##' @author John Giles
 ##' 
@@ -1103,44 +1109,87 @@ get.param.vals <- function(
 ##' @export
 ##' 
 
-calc.prop.remain <- function(d,       # 4D data array produced by the mob.data.array function
-                             gen.t    # interval used to define the epidemic generation
+calc.prop.remain <- function(d,                # 4D duration data array produced by the mob.data.array function
+                             gen.t,            # interval used to define the epidemic generation
+                             sub.samp=NULL     # number of generation to subsamp, if NULL (default) will use all observed generation times in the data
 ) {
      
      if (is.null(dimnames(d)$duration)) {
-          stop("The calc.p function assumes that the duration values in the data array are NOT aggregated. Check that you have run the mob.data.array function with agg.int=1")
+          stop("The calc.prop.remain function assumes that the duration values in the data array are NOT aggregated. Check that you have run the mob.data.array function with agg.int=1")
      } 
      
      max.gen <- ceiling(max(as.numeric(dimnames(d)$duration))/gen.t)
-     out <- array(NA, dim=c(dim(d)[1:3], max.gen))
      
-     for (i in 1:dim(d)[1]) {
-          for (j in 1:dim(d)[2]) {
-               for (t in 1:dim(d)[3]) {
-                    for (k in 1:max.gen) {
-                         
-                         print(paste(round(i/dim(d)[1], 2),
-                                     round(j/dim(d)[2], 2),
-                                     round(t/dim(d)[3], 2),
-                                     round(k/max.gen, 2),
-                                     sep=" | "))
-                         
-                         if (i == j) (next)
-                         
-                         x <- d[i,j,t,which(as.numeric(dimnames(d)$duration) > gen.t*(k-1) & 
-                                                 as.numeric(dimnames(d)$duration) <= gen.t*k)]
-                         
-                         out[i,j,t,k] <- (x[!is.na(x)] %*% (seq_along(x)[!is.na(x)]/length(x))) / (sum(x, na.rm=T))
+     if (is.null(sub.samp)) {
+          
+          gens <- 1:max.gen
+          
+     } else if (!is.null(sub.samp)) {
+          
+          gens <- sort(sample(1:max.gen, sub.samp))
+     }
+     
+     
+     if (length(dim(d)) == 4) { # Month-level duration data
+          
+          out <- array(NA, dim=c(dim(d)[1:3], length(gens)))
+          
+          for (i in 1:dim(d)[1]) {
+               for (j in 1:dim(d)[2]) {
+                    for (t in 1:dim(d)[3]) {
+                         for (k in 1:length(gens)) {
+                              
+                              print(paste(round(i/dim(d)[1], 2),
+                                          round(j/dim(d)[2], 2),
+                                          round(t/dim(d)[3], 2),
+                                          round(k/length(gens), 2),
+                                          sep=" | "), quote=FALSE)
+                              
+                              if (i == j) (next)
+                              
+                              x <- d[i,j,t,which(as.numeric(dimnames(d)$duration) > gen.t*(gens[k]-1) & 
+                                                      as.numeric(dimnames(d)$duration) <= gen.t*gens[k])]
+                              
+                              out[i,j,t,k] <- (x[!is.na(x)] %*% (seq_along(x)[!is.na(x)]/length(x))) / (sum(x, na.rm=T))
+                         }
                     }
                }
           }
+          
+          out[is.nan(out)] <- NA
+          dimnames(out) <- list(origin=dimnames(d)$origin,
+                                destination=dimnames(d)$destination,
+                                time=dimnames(d)$time,
+                                generation=as.character(gens))
+          
+     } else if (length(dim(d)) == 3) { # Route-level duration data
+          
+          out <- array(NA, dim=c(dim(d)[1:2], length(gens)))
+          
+          for (i in 1:dim(d)[1]) {
+               for (j in 1:dim(d)[2]) {
+                    for (k in 1:length(gens)) {
+                         
+                         print(paste(round(i/dim(d)[1], 2),
+                                     round(j/dim(d)[2], 2),
+                                     round(k/length(gens), 2),
+                                     sep=" | "), quote=FALSE)
+                         
+                         if (i == j) (next)
+                         
+                         x <- d[i,j,which(as.numeric(dimnames(d)$duration) > gen.t*(gens[k]-1) & as.numeric(dimnames(d)$duration) <= gen.t*gens[k])]
+                         out[i,j,k] <- (x[!is.na(x)] %*% (seq_along(x)[!is.na(x)]/length(x))) / (sum(x, na.rm=T))
+                    }
+               }
+          }
+          
+          out[is.nan(out)] <- NA
+          dimnames(out) <- list(origin=dimnames(d)$origin,
+                                destination=dimnames(d)$destination,
+                                generation=as.character(gens))
+          
      }
      
-     out[is.nan(out)] <- NA
-     dimnames(out) <- list(origin=dimnames(d)$origin,
-                           destination=dimnames(d)$destination,
-                           time=dimnames(d)$time,
-                           generation=as.character(1:max.gen))
      return(out)
 }
 
@@ -2191,3 +2240,98 @@ get.subsamp <- function(
      sel <- dimnames(x)$origin %in% dimnames(samp.size)$origin
      return(x[sel,sel,])
 }
+
+
+##' Calculate the cumulative proportion of trips for values of a given variable
+##'
+##' This function takes a longform dataframe of trip counts and calculates the cumulative proportion of the total number of observed trips for each of 
+##' the values provided in the \code{vals} vector.
+##' 
+##' @param variable a vector of variable values for which to calculate the proportion of total trips (e.g. 'duration' or 'distance')
+##' @param counts a vector of observed counts of each value
+##' @param vals vector giving numeric values of the variable at which to calculate the proportion of total trips
+##' @param parallel run in parallel (when the \code{vals} vector is long), default=FALSE
+##' @param n.cores number of cores to use in parallel
+##' 
+##' @return a two-column dataframe
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/calc_prop_tot_trips.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+calc.prop.tot.trips <- function(
+     variable,                     # a vector of variable values for which to calculate the proportion of total trips
+     counts,                       # observed counts of each value
+     type,                         # type pf proportion to calculate: options are 'cumulative' (<= each variable value) or 'interval' (values in \code{vals} are used as bins)
+     vals,                         # numaric values of the variable at which to calculate the proportion of total trips
+     parallel=FALSE,               # run in parallel (when the \code{vals} vector is long), default=FALSE
+     n.cores=2                     # number of cores to use in parallel
+) {
+     
+     if(!(identical(length(variable), length(counts)))) {
+          stop("Dimensions of variable and count arguments must match.")
+     }
+     
+     if(length(vals) > 100) {
+          print("Calculating the proportion of total trips for a large number of values will increase compuation time.", quote=FALSE)
+     }
+     
+     if (parallel == FALSE) {
+          
+          if (type == 'cumulative') {
+               
+               out <- rep(NA, length(vals))
+               for (i in seq_along(vals)) {
+                    
+                    print(paste(i, "of", length(vals), "values ---", round((i/length(vals))*100), "%", sep= " "))
+                    
+                    out[i] <- sum(counts[variable <= vals[i]], na.rm=TRUE)
+               }
+          } else if (type == 'interval') {
+               
+               if (vals[1] != 0) vals <- c(0, vals)
+               
+               out <- rep(NA, length(vals))
+               for (i in 2:length(vals)) {
+                    
+                    print(paste(i, "of", length(vals), "values ---", round((i/length(vals))*100), "%", sep= " "))
+                    
+                    out[i] <- sum(counts[variable > tmp[i-1] & variable <= tmp[i]], na.rm=TRUE)
+               }
+          }
+     } else if (parallel == TRUE) {
+          
+          print(paste("Running", length(vals), "values in parallel..."), quote=FALSE)
+          
+          clust <- makeCluster(n.cores)
+          registerDoParallel(clust)
+          
+          if (type == 'cumulative') {
+               
+               out <- foreach(i=seq_along(vals), .combine='c') %dopar% {
+                    
+                    sum(counts[variable <= vals[i]], na.rm=TRUE)
+               }
+          } else if (type == 'interval') {
+               
+               if (vals[1] != 0) vals <- c(0, vals)
+               
+               out <- foreach(i=2:(length(vals)), .combine='c') %dopar% {
+                    
+                    sum(counts[variable > vals[i-1] & variable <= vals[i]], na.rm=TRUE)
+               }
+               out <- c(NA, out)
+          }
+     }
+     
+     out <- out/sum(counts)
+     out <- data.frame(vals, out)
+     colnames(out) <- c('values', 'prop')
+     return(out)
+}
+

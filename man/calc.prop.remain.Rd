@@ -4,16 +4,19 @@
 \alias{calc.prop.remain}
 \title{Proportion of individuals remaining for full epidemic generation}
 \usage{
-calc.prop.remain(d, gen.t)
+calc.prop.remain(d, gen.t, sub.samp = NULL)
 }
 \arguments{
-\item{d}{a four-dimensional array containing counts of trip durations produced by the \code{\link{mob.data.array}} function. 
-Note that \code{calc.p} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)}
+\item{d}{a three- or four-dimensional array containing route- or month-level trip duration counts produced by the \code{\link{mob.data.array}} function. 
+Note that \code{calc.prop.remain} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)}
 
 \item{gen.t}{the time interval in days used to define the epidemic generation}
+
+\item{sub.samp}{scalar indicating the number of generations to subsample, if NULL (default), will use all observed generation times in the data (which will increase computation time for large numbers of locations)}
 }
 \value{
-A 4-dimensional array with values between 0 and 1
+if \code{d} is a month-level duration data array, then a 4D array with values between 0 and 1 is returned. If \code{d} is a route-level duration data array, 
+then returns a 3D array is returned.
 }
 \description{
 This function calculates the proportion of individuals that remain in a location for
@@ -22,17 +25,26 @@ is defined as the effective probability if individuals that stay for a full epid
 when they travel to destination \eqn{j} at time \eqn{t}:\cr
 \cr
 \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
+\cr
+Because the Namibia mobility data spans 4 years there are many potential time intervals for which to calculate 
+the proportion of individuals remaining for full epidemic generation. The \code{sub.samp} argument randomly 
+selects X number of these generations to reduce computation time.
 }
 \examples{
-library(hmobdata)
-data(duration.array.month.level)
 
-# Proportion travellers remaining after 1 generation, where the generation time is 3 days (influenza)
-p <- calc.p(d=duration.array.month.level, gen.t=3, n.gen=1)
+# Duration data for the purpose of subsetting districts
+load('./data/duration_data_arrays_1day_full.Rdata') 
+
+# Proportion travellers remaining for full epidemic generation based on subsample of 10, where the generation time is 14 days (measles)
+p1 <- calc.prop.remain(d=y.route, gen.t=14, sub.samp=10)
+p2 <- calc.prop.remain(d=y.month, gen.t=14, sub.samp=10)
 
 # Get destination-level mean and variance
-p.mean <- apply(p, 2, mean, na.rm=TRUE)
-p.var <- apply(p, 2, var, na.rm=TRUE)
+p1.mean <- apply(p1, 2, mean, na.rm=TRUE)
+p1.var <- apply(p1, 2, var, na.rm=TRUE)
+
+p2.mean <- apply(p2, 2, mean, na.rm=TRUE)
+p2.var <- apply(p2, 2, var, na.rm=TRUE)
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
