@@ -24,7 +24,7 @@ all of epidemic generation \eqn{n}. The value is represented by the variable \eq
 is defined as the effective probability if individuals that stay for a full epidemic generation 
 when they travel to destination \eqn{j} at time \eqn{t}:\cr
 \cr
-\eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
+\eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})\cr
 \cr
 Because the Namibia mobility data spans 4 years there are many potential time intervals for which to calculate 
 the proportion of individuals remaining for full epidemic generation. The \code{sub.samp} argument randomly 

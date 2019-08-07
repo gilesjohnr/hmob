@@ -1086,7 +1086,7 @@ get.param.vals <- function(
 ##' is defined as the effective probability if individuals that stay for a full epidemic generation 
 ##' when they travel to destination \eqn{j} at time \eqn{t}:\cr
 ##' \cr
-##' \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})
+##' \eqn{p_ij} = Pr(remaining for all of \eqn{n^th} epidemic generation | generation time \eqn{g})\cr
 ##' \cr
 ##' Because the Namibia mobility data spans 4 years there are many potential time intervals for which to calculate 
 ##' the proportion of individuals remaining for full epidemic generation. The \code{sub.samp} argument randomly 
@@ -1126,9 +1126,15 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
           
      } else if (!is.null(sub.samp)) {
           
-          gens <- sort(sample(1:max.gen, sub.samp))
+          if (sub.samp >= max.gen) {
+               
+               gens <- 1:max.gen
+               
+          } else if (sub.samp < max.gen) {
+               
+               gens <- sort(sample(1:max.gen, sub.samp))
+          }
      }
-     
      
      if (length(dim(d)) == 4) { # Month-level duration data
           
