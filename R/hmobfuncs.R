@@ -1438,10 +1438,10 @@ sim.tau <- function(p # matrix giving the probability of leaving origin
 
 sim.TSIR <- function(districts,                 # Vector of district names
                      N,                         # Vector giving the population size of each district
-                     tau=NULL,                       # Vector giving the proportion of individuals that travel in each district
-                     lambda=NULL,                    # Matrix of trip duration decay for route i to j 
+                     tau=NULL,                  # Vector giving the proportion of individuals that travel in each district
+                     lambda=NULL,               # Matrix of trip duration decay for route i to j 
                      pi,                        # Matrix of district connectivity for route i to j
-                     rho=NULL,                       # Matrix of proportion of travellers remaining for full generation for route i to j
+                     rho=NULL,                  # Matrix of proportion of travellers remaining for full generation for route i to j
                      beta,                      # Transmission rate
                      gamma,                     # Recovery rate
                      gen.t,                     # Pathogen generation time
@@ -1501,9 +1501,7 @@ sim.TSIR <- function(districts,                 # Vector of district names
                     tot.inf[j] <- tot.inf[j] + dIdt
                     
                     # Spatial movement of infected
-                    iota[j,t+1] <- rpois(1, 
-                                         sum(pi[,j] * y[,'I',t], na.rm=TRUE)
-                    )
+                    iota[j,t+1] <- rpois(1, sum(pi[,j] * y[,'I',t], na.rm=TRUE))
                     
                     # Spatial hazard
                     h[j,t+1] <- (beta[j] * y[j,'S',t] * (1 - exp(-sum(pi[,j], na.rm=TRUE) * (y[j,'S',t] / sum(y[j,,t])) * (sum(y[-j,"I",t]) / sum(N[-j])) ))) / (1 + beta[j] * y[j,'S',t])
@@ -1733,7 +1731,7 @@ sim.combine.dual <- function(x,
 ##' @param max.t Maximum number of epidemic generations
 ##' @param I.0 Vector giving number of infected individuals in each district at time 0
 ##' @param N.sim1 Number of times to simulate matrices of model parameters (lambda, pi, tau, rho)
-##' @param N.sim2 Number of times to simulate epidemic outcomes under each realization of model parameters (default = 100)
+##' @param N.sim2 Number of times to simulate epidemic outcomes under each realization of model parameters (lambda, pi, tau, rho; default = 100)
 ##' @param max.t Maximum number of generations (default = 100)
 ##' @param freq.dep Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission
 ##' @param n.cores Number of cores to use when running in parallel (default = NULL will use 2)
@@ -1774,7 +1772,6 @@ sim.TSIR.full <- function(
      }
      
      n.districts <- length(districts)
-     prop.leave <- prop.leave[,colnames(prop.leave) %in% districts]
      
      if(is.null(n.cores)) cl <- parallel::makeCluster(parallel::detectCores()/2)
      if(!is.null(n.cores)) cl <- parallel::makeCluster(n.cores)

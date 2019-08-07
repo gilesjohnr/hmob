@@ -31,7 +31,7 @@ sim.TSIR.full(districts, N, lambda, pi.duration, pi.basic, prop.leave,
 
 \item{N.sim1}{Number of times to simulate matrices of model parameters (lambda, pi, tau, rho)}
 
-\item{N.sim2}{Number of times to simulate epidemic outcomes under each realization of model parameters (default = 100)}
+\item{N.sim2}{Number of times to simulate epidemic outcomes under each realization of model parameters (lambda, pi, tau, rho; default = 100)}
 
 \item{max.t}{Maximum number of epidemic generations}
 
