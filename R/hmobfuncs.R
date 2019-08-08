@@ -1734,6 +1734,7 @@ sim.combine.dual <- function(x,
 ##' @param N.sim2 Number of times to simulate epidemic outcomes under each realization of model parameters (lambda, pi, tau, rho; default = 100)
 ##' @param max.t Maximum number of generations (default = 100)
 ##' @param freq.dep Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission
+##' @param parallel Register a cluster of n.cores as foreach backend 
 ##' @param n.cores Number of cores to use when running in parallel (default = NULL will use 2)
 ##' 
 ##' @return a list containing simulations using the basic gravity model and the gravity model with duration
@@ -1763,6 +1764,7 @@ sim.TSIR.full <- function(
      N.sim2=100,                # Number of times to simulate epidemic outcomes under each realization of model parameters
      max.t=100,                 # Maximum number of generations
      freq.dep=TRUE,             # Frequency or density dependent transmission
+     parallel=TRUE,   
      n.cores=NULL
 ){
      
@@ -1773,12 +1775,18 @@ sim.TSIR.full <- function(
      
      n.districts <- length(districts)
      
-     if(is.null(n.cores)) cl <- parallel::makeCluster(parallel::detectCores()/2)
-     if(!is.null(n.cores)) cl <- parallel::makeCluster(n.cores)
-     
-     doParallel::registerDoParallel(cl)
-     parallel::clusterExport(cl, ls(environment()), envir=environment())
-     
+     if (parallel == TRUE) {
+          
+          if(is.null(n.cores)) {
+               cl <- parallel::makeCluster(parallel::detectCores()/2)
+          } else if(!is.null(n.cores)) {
+               cl <- parallel::makeCluster(n.cores)
+          } 
+          
+          doParallel::registerDoParallel(cl)
+          parallel::clusterExport(cl, ls(environment()), envir=environment())
+     }
+
      out <- foreach(i=1:N.sim1, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {
           
           # Simulate one realization of estimated model parameters
