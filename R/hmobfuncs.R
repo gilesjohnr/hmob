@@ -1734,8 +1734,8 @@ sim.combine.dual <- function(x,
 ##' @param N.sim2 Number of times to simulate epidemic outcomes under each realization of model parameters (lambda, pi, tau, rho; default = 100)
 ##' @param max.t Maximum number of generations (default = 100)
 ##' @param freq.dep Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission
-##' @param parallel Register a cluster of n.cores as foreach backend 
-##' @param n.cores Number of cores to use when running in parallel (default = NULL will use 2)
+##' @param parallel Logical indicating whether to initiate the cluster within \code{sim.TSIR.full} and register as \code{foreach} backend
+##' @param n.cores Number of cores to use when running in parallel (default = NULL will use total cores - 1)
 ##' 
 ##' @return a list containing simulations using the basic gravity model and the gravity model with duration
 ##'
@@ -1764,12 +1764,11 @@ sim.TSIR.full <- function(
      N.sim2=100,                # Number of times to simulate epidemic outcomes under each realization of model parameters
      max.t=100,                 # Maximum number of generations
      freq.dep=TRUE,             # Frequency or density dependent transmission
-     parallel=TRUE,   
-     n.cores=NULL
+     parallel=FALSE,            # Indicate whether to initiate and the cluster within \code{sim.TSIR.full} and register as \code{foreach} backend
+     n.cores=NULL               # 
 ){
      
-     if(!(identical(length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), 
-                    nrow(lambda$mean), nrow(prop.remain)))) {
+     if(!(identical(length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), nrow(lambda$mean), nrow(prop.remain)))) {
           stop("Dimensions of simulation arguments must match.")
      }
      
@@ -1778,15 +1777,15 @@ sim.TSIR.full <- function(
      if (parallel == TRUE) {
           
           if(is.null(n.cores)) {
-               cl <- parallel::makeCluster(parallel::detectCores()/2)
+               cl <- makeCluster(detectCores()-1)
           } else if(!is.null(n.cores)) {
-               cl <- parallel::makeCluster(n.cores)
+               cl <- makeCluster(n.cores)
           } 
           
-          doParallel::registerDoParallel(cl)
-          parallel::clusterExport(cl, ls(environment()), envir=environment())
+          registerDoParallel(cl); print("Cluster initiated.")
+          getDoParRegistered(); getDoParWorkers(); getDoParName(); class(cl)
      }
-
+     
      out <- foreach(i=1:N.sim1, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {
           
           # Simulate one realization of estimated model parameters
@@ -1799,6 +1798,7 @@ sim.TSIR.full <- function(
           B.tot.inf <- R.tot.inf <- vector()
           B.epi.curve <- R.epi.curve <- array(NA, dim=c(length(districts), max.t, 0))
           B.wait.time <- R.wait.time <- array(NA, dim=c(length(districts), max.t, 0))
+          
           
           for (j in 1:N.sim2) {
                
@@ -1840,6 +1840,7 @@ sim.TSIR.full <- function(
                R.wait.time <- abind::abind(R.wait.time, sim$wait.time, along=3)
           }
           
+          
           list(
                B=list(tot.inf=B.tot.inf,
                       epi.curve=B.epi.curve,
@@ -1850,7 +1851,12 @@ sim.TSIR.full <- function(
           )
      }
      
-     parallel::stopCluster(cl)
+     if (parallel == TRUE) {
+          stopCluster(cl); print("Cluster stopped.")
+          registerDoSEQ() # serial backend to allow repetetive tasks
+          remove(cl)
+     }
+     
      return(out)
 }
 
@@ -1894,11 +1900,11 @@ calc.wait.time <- function(x) {
 ##'
 ##' This function calculates the highest posterior density (HPD) interval for the aggregated 
 ##' waiting time distributions returned by the \code{\link{calc.wait.time}} function. The function 
-##' calculates the maximum of each aggregated probability distribution along with its 50 and 95 percent HPD. 
+##' calculates the maximum of each aggregated probability distribution along with the HPD intervals given by \code{ci}. 
 ##' Code adapted from the \code{hpd} function in the \code{TeachingDemos} package.
 ##' 
 ##' @param x aggregated waiting time distributions for each district (output from \code{\link{calc.wait.time}})
-##' @param ci a scalar or vector giving the intervals for which the highest posterior density should be calculated (default = 0.95)
+##' @param ci a scalar or vector giving the HPD intervals to be calculated (default = 0.95)
 ##' 
 ##' @return a dataframe
 ##' 
@@ -1917,30 +1923,45 @@ calc.hpd <- function(x, ci=0.95) {
      
      out <- foreach (i=seq_along(districts), .combine='rbind') %do% {
           
-          time.steps <- as.numeric(names(x[i,]))
-          samp <- sample(time.steps, 1e4, replace = TRUE, prob=x[i,]) 
-          
-          # Calculate 50% and 95% highest posterior density
-          out <- foreach(j=seq_along(ci), .combine='cbind') %do% {
+          if (all(is.na(x[i,]))) {
                
-               samp <- sort(samp)  # order sample for CDF
-               n <- length(samp)   # length of sample
-               tails <- (1-ci[j]) # HPD interval tails
+               out <- foreach(j=seq_along(ci), .combine='cbind') %do% {
+                    
+                    out <- data.frame(NA, NA) 
+                    colnames(out) <- c(paste('lo', ci[j]*100, sep=''), paste('hi', ci[j]*100, sep=''))
+                    out
+               }
                
-               cutoff <- round(n*tails)   # index of gross cutoff
-               tmp <- samp[(n-cutoff+1):n] - samp[1:cutoff] # exact cutoff
-               cutoff2 <- which(tmp == min(tmp))[1] 
+               cbind(max=NA, out) 
                
-               out <- data.frame(samp[cutoff2], samp[n-cutoff+cutoff2]) 
-               colnames(out) <- c(paste('lo', ci[j]*100, sep=''), paste('hi', ci[j]*100, sep=''))
-               out
+          } else {
+               
+               time.steps <- as.numeric(names(x[i,]))
+               samp <- sample(time.steps, 1e4, replace = TRUE, prob=x[i,]) 
+               
+               # Calculate 50% and 95% highest posterior density
+               out <- foreach(j=seq_along(ci), .combine='cbind') %do% {
+                    
+                    samp <- sort(samp)  # order sample for CDF
+                    n <- length(samp)   # length of sample
+                    tails <- (1-ci[j]) # HPD interval tails
+                    
+                    cutoff <- round(n*tails)   # index of gross cutoff
+                    tmp <- samp[(n-cutoff+1):n] - samp[1:cutoff] # exact cutoff
+                    cutoff2 <- which(tmp == min(tmp))[1] 
+                    
+                    out <- data.frame(samp[cutoff2], samp[n-cutoff+cutoff2]) 
+                    colnames(out) <- c(paste('lo', ci[j]*100, sep=''), paste('hi', ci[j]*100, sep=''))
+                    out
+               }
+               
+               cbind(max=time.steps[which(x[i,] == max(x[i,]))], out) 
           }
-          
-          cbind(max=time.steps[which(x[i,] == max(x[i,]))], out)
      }
      
      return(cbind(as.data.frame(districts), out))
 }
+
 
 ##' Calculate proportion infected in each district
 ##'

@@ -6,7 +6,7 @@
 \usage{
 sim.TSIR.full(districts, N, lambda, pi.duration, pi.basic, prop.leave,
   prop.remain, beta, gamma, gen, I.0, N.sim1, N.sim2 = 100,
-  max.t = 100, freq.dep = TRUE, parallel = TRUE, n.cores = NULL)
+  max.t = 100, freq.dep = TRUE, parallel = FALSE, n.cores = NULL)
 }
 \arguments{
 \item{districts}{Vector of district names}
@@ -37,9 +37,9 @@ sim.TSIR.full(districts, N, lambda, pi.duration, pi.basic, prop.leave,
 
 \item{freq.dep}{Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission}
 
-\item{parallel}{Register a cluster of n.cores as foreach backend}
+\item{parallel}{Logical indicating whether to initiate the cluster within \code{sim.TSIR.full} and register as \code{foreach} backend}
 
-\item{n.cores}{Number of cores to use when running in parallel (default = NULL will use 2)}
+\item{n.cores}{Number of cores to use when running in parallel (default = NULL will use total cores - 1)}
 
 \item{gen.t}{Pathogen generation time (days)}
 

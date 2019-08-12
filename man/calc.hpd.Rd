@@ -9,7 +9,7 @@ calc.hpd(x, ci = 0.95)
 \arguments{
 \item{x}{aggregated waiting time distributions for each district (output from \code{\link{calc.wait.time}})}
 
-\item{ci}{a scalar or vector giving the intervals for which the highest posterior density should be calculated (default = 0.95)}
+\item{ci}{a scalar or vector giving the HPD intervals to be calculated (default = 0.95)}
 }
 \value{
 a dataframe
@@ -17,7 +17,7 @@ a dataframe
 \description{
 This function calculates the highest posterior density (HPD) interval for the aggregated 
 waiting time distributions returned by the \code{\link{calc.wait.time}} function. The function 
-calculates the maximum of each aggregated probability distribution along with its 50 and 95 percent HPD. 
+calculates the maximum of each aggregated probability distribution along with the HPD intervals given by \code{ci}. 
 Code adapted from the \code{hpd} function in the \code{TeachingDemos} package.
 }
 \examples{
