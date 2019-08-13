@@ -1727,6 +1727,7 @@ sim.combine.dual <- function(x,
 ##' simulations in parallel and the \code{N.sim2} level simulations sequentially.
 ##' 
 ##' @param districts Vector of district names
+##' @param n.districts Number of total districts
 ##' @param N Vector giving the population size of each district
 ##' @param lambda Estimated parameters from trip duration decay model (lambda), processed by the \code{\link{get.param.vals}} function
 ##' @param pi.duration Estimated parameters from gravity model with duration (pi), processed by the \code{\link{get.param.vals}} function
@@ -1743,7 +1744,7 @@ sim.combine.dual <- function(x,
 ##' @param max.t Maximum number of generations (default = 100)
 ##' @param freq.dep Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission
 ##' @param parallel Logical indicating whether to initiate the cluster within \code{sim.TSIR.full} and register as \code{foreach} backend
-##' @param n.cores Number of cores to use when running in parallel (default = NULL will use total cores - 1)
+##' @param n.cores Number of cores to use when running in parallel
 ##' 
 ##' @return a list containing simulations using the basic gravity model and the gravity model with duration
 ##'
@@ -1758,6 +1759,7 @@ sim.combine.dual <- function(x,
 
 sim.TSIR.full <- function(
      districts,                 # Vector of district names
+     n.districts,               # Number of total districts
      N,                         # Vector giving the population size of each district
      lambda,                    # Decay model parameters (Lambda)
      pi.duration,               # Gravity model with duration
@@ -1776,17 +1778,15 @@ sim.TSIR.full <- function(
      n.cores                    # 
 ){
      
-     if(!(identical(length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), nrow(lambda$mean), nrow(prop.remain)))) {
+     if(!(identical(n.districts, length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), nrow(lambda$mean), nrow(prop.remain)))) {
           stop("Dimensions of simulation arguments must match.")
      }
      
-     n.districts <- length(districts)
-     
      if (parallel == TRUE) {
           
-          cl <- makeCluster(n.cores)
-          registerDoParallel(cl); print("Cluster initiated.")
-          getDoParRegistered(); getDoParWorkers(); getDoParName(); class(cl)
+          cl <- makePSOCKcluster(n.cores)
+          registerDoParallel(cl) 
+          print(paste(class(cl)[1], 'with', getDoParWorkers(), 'cores named', getDoParName(), 'was initiated.', sep=' '), quote=FALSE)
      }
      
      out <- foreach(i=1:N.sim1, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {
@@ -1798,11 +1798,7 @@ sim.TSIR.full <- function(
           rho.hat <- sim.rho(p=prop.remain, level='route')
           tau.hat <- sim.tau(prop.leave)
           
-          B.tot.inf <- R.tot.inf <- vector()
-          B.epi.curve <- R.epi.curve <- array(NA, dim=c(length(districts), max.t, 0))
-          B.wait.time <- R.wait.time <- array(NA, dim=c(length(districts), max.t, 0))
-          
-          for (j in 1:N.sim2) {
+          foreach(j=1:N.sim2, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {
                
                # Basic gravity model
                sim <- sim.TSIR(districts=districts,                 
@@ -1817,9 +1813,9 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                           
                )
                
-               B.tot.inf <- rbind(B.tot.inf, sim$tot.inf)
-               B.epi.curve <- abind::abind(B.epi.curve, sim$tsir[,'I',], along=3)
-               B.wait.time <- abind::abind(B.wait.time, sim$wait.time, along=3)
+               B <- list(tot.inf=sim$tot.inf,
+                         epi.curve=sim$tsir[,'I',],
+                         wait.time=sim$wait.time)
                
                # Gravity model with duration
                sim <- sim.TSIR(districts=districts,                 
@@ -1837,23 +1833,16 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                         
                )
                
-               R.tot.inf <- rbind(R.tot.inf, sim$tot.inf)
-               R.epi.curve <- abind::abind(R.epi.curve, sim$tsir[,'I',], along=3)
-               R.wait.time <- abind::abind(R.wait.time, sim$wait.time, along=3)
+               R <- list(tot.inf=sim$tot.inf,
+                         epi.curve=sim$tsir[,'I',],
+                         wait.time=sim$wait.time)
+               
+               list(B=B, R=R)
           }
-          
-          list(
-               B=list(tot.inf=B.tot.inf,
-                      epi.curve=B.epi.curve,
-                      wait.time=B.wait.time),
-               R=list(tot.inf=R.tot.inf,
-                      epi.curve=R.epi.curve,
-                      wait.time=R.wait.time)
-          )
      }
      
      if (parallel == TRUE) {
-          stopCluster(cl); print("Cluster stopped.")
+          stopCluster(cl); print("Cluster stopped.", quote=FALSE)
           registerDoSEQ() # serial backend to allow repetetive tasks
           remove(cl)
      }

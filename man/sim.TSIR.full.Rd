@@ -4,12 +4,14 @@
 \alias{sim.TSIR.full}
 \title{Simulate full stochastic TSIR in parallel}
 \usage{
-sim.TSIR.full(districts, N, lambda, pi.duration, pi.basic, prop.leave,
-  prop.remain, beta, gamma, gen, I.0, N.sim1, N.sim2 = 100,
+sim.TSIR.full(districts, n.districts, N, lambda, pi.duration, pi.basic,
+  prop.leave, prop.remain, beta, gamma, gen, I.0, N.sim1, N.sim2 = 100,
   max.t = 100, freq.dep = TRUE, parallel = FALSE, n.cores)
 }
 \arguments{
 \item{districts}{Vector of district names}
+
+\item{n.districts}{Number of total districts}
 
 \item{N}{Vector giving the population size of each district}
 
@@ -39,7 +41,7 @@ sim.TSIR.full(districts, N, lambda, pi.duration, pi.basic, prop.leave,
 
 \item{parallel}{Logical indicating whether to initiate the cluster within \code{sim.TSIR.full} and register as \code{foreach} backend}
 
-\item{n.cores}{Number of cores to use when running in parallel (default = NULL will use total cores - 1)}
+\item{n.cores}{Number of cores to use when running in parallel}
 
 \item{gen.t}{Pathogen generation time (days)}
 
