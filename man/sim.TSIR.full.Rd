@@ -6,7 +6,7 @@
 \usage{
 sim.TSIR.full(districts, N, lambda, pi.duration, pi.basic, prop.leave,
   prop.remain, beta, gamma, gen, I.0, N.sim1, N.sim2 = 100,
-  max.t = 100, freq.dep = TRUE, parallel = FALSE, n.cores = NULL)
+  max.t = 100, freq.dep = TRUE, parallel = FALSE, n.cores)
 }
 \arguments{
 \item{districts}{Vector of district names}

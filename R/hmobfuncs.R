@@ -1322,7 +1322,9 @@ sim.rho <- function(p,
           out <- foreach(i = 1:dim(p)[1], .combine='rbind') %:% 
                foreach(j = 1:dim(p)[2], .combine='c') %do% {
                     
-                    x <- rbeta(1, beta.params$a[i,j], beta.params$b[i,j])
+                    suppressWarnings(
+                         x <- rbeta(1, beta.params$a[i,j], beta.params$b[i,j])
+                    )
                }
           
           dimnames(out) <- dimnames(sigma.p) <- dimnames(mu.p)
@@ -1399,7 +1401,13 @@ sim.tau <- function(p # matrix giving the probability of leaving origin
      beta.params <- get.beta.params(mu.p, sigma.p)
      
      out <- rep(NA, ncol(p))
-     for (i in 1:ncol(p)) out[i] <- rbeta(1, beta.params$a[i], beta.params$b[i])
+     
+     suppressWarnings(
+          for (i in 1:ncol(p)) {
+               
+               out[i] <- rbeta(1, beta.params$a[i], beta.params$b[i])
+          } 
+     )
      
      names(out) <- dimnames(p)$origin
      
@@ -1765,7 +1773,7 @@ sim.TSIR.full <- function(
      max.t=100,                 # Maximum number of generations
      freq.dep=TRUE,             # Frequency or density dependent transmission
      parallel=FALSE,            # Indicate whether to initiate and the cluster within \code{sim.TSIR.full} and register as \code{foreach} backend
-     n.cores=NULL               # 
+     n.cores                    # 
 ){
      
      if(!(identical(length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), nrow(lambda$mean), nrow(prop.remain)))) {
@@ -1776,12 +1784,7 @@ sim.TSIR.full <- function(
      
      if (parallel == TRUE) {
           
-          if(is.null(n.cores)) {
-               cl <- makeCluster(detectCores()-1)
-          } else if(!is.null(n.cores)) {
-               cl <- makeCluster(n.cores)
-          } 
-          
+          cl <- makeCluster(n.cores)
           registerDoParallel(cl); print("Cluster initiated.")
           getDoParRegistered(); getDoParWorkers(); getDoParName(); class(cl)
      }
@@ -1798,7 +1801,6 @@ sim.TSIR.full <- function(
           B.tot.inf <- R.tot.inf <- vector()
           B.epi.curve <- R.epi.curve <- array(NA, dim=c(length(districts), max.t, 0))
           B.wait.time <- R.wait.time <- array(NA, dim=c(length(districts), max.t, 0))
-          
           
           for (j in 1:N.sim2) {
                
@@ -1839,7 +1841,6 @@ sim.TSIR.full <- function(
                R.epi.curve <- abind::abind(R.epi.curve, sim$tsir[,'I',], along=3)
                R.wait.time <- abind::abind(R.wait.time, sim$wait.time, along=3)
           }
-          
           
           list(
                B=list(tot.inf=B.tot.inf,
