@@ -1775,7 +1775,7 @@ sim.TSIR.full <- function(
      max.t=100,                 # Maximum number of generations
      freq.dep=TRUE,             # Frequency or density dependent transmission
      parallel=FALSE,            # Indicate whether to initiate and the cluster within \code{sim.TSIR.full} and register as \code{foreach} backend
-     n.cores                    # 
+     n.cores=NULL                    
 ){
      
      if(!(identical(n.districts, length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), nrow(lambda$mean), nrow(prop.remain)))) {
@@ -1798,9 +1798,9 @@ sim.TSIR.full <- function(
           rho.hat <- sim.rho(p=prop.remain, level='route')
           tau.hat <- sim.tau(prop.leave)
           
-          foreach(j=1:N.sim2, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {
+          foreach(j=1:N.sim2, .combine=sim.combine.dual) %do% {
                
-               # Basic gravity model
+               # Basic gravity model    
                sim <- sim.TSIR(districts=districts,                 
                                N=N,                                 
                                pi=pi.hat.basic,        # connectivity comes from basic gravity model formulation 
