@@ -617,221 +617,132 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 
 ##' Build mobility data array
 ##'
-##' This function that builds data arrays at the time-level (e.g. month) for use in mob. The data arrays contain counts of either 
-##' the distance or duration of trips, or the number of individuals moving from origin i to destination j.
+##' This function builds data arrays of total trip counts from longform mobility data (such as that produced by the \code{parse.longform} function). 
+##' If \code{time=NULL} (default), route-level counts are returned. If a vector of times (e.g. week or month) is provided, an additional dimension is added to 
+##' the array. If a covariate is provided in \code{variable}, the function will return total trip counts that are aggregated according to this variable (e.g. trip distance or trip duration).
 ##' 
-##' @param d Longform data with metadata attached
-##' @param time The temporal interal used to construct the array (default = \code{'month'})
-##' @param variable Character string giving the response variable; expects either \code{'distance'}, \code{'duration'}, \code{'movement'}, or \code{'leave'}
-##' @param level The level of the data. If NULL, the level will be the same as the time variable. If set to \code{route} the mean across the time level will be taken for each route.
-##' @param agg.int an integer giving the interval by which to aggregate the selected variable (default = 1). When \code{variable = 'duration'} this is the length 
-##' of generation time (in days), when \code{variable = 'distance'} this is the distance interval in km. Ignored when \code{variable = 'movement'}.
-##' @param verbose print function progress (default = TRUE)
+##' 
+##' @param orig a vector of origin districts
+##' @param dest a vector of destination districts
+##' @param time a vector of the time of each observation (e.g. day, week, month, year). When \code{time = NULL} (default), function returns route-level matrix.
+##' @param count a vector of total counts of each observation
+##' @param variable a vector of covariate values with which to condition trip counts (e.g. distance or trip duration)
+##' @param name a character string giving the name of the variable; expects either \code{'distance'}, \code{'duration'}, \code{'movement'}, or \code{'leave'}
+##' @param agg.int an integer giving the interval by which to aggregate the given variable, default = 1 (not aggregated). When \code{variable} is trip duration, this is the length 
+##' of generation time (in days). When \code{variable} is distance, this is the distance interval in km. Ignored when \code{name} is \code{'movement'} or \code{'leave'}.
 ##'  
-##' @return A matrix when \code{variable = 'leave'}, 3-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 4-dimensional array when \code{variable = 'duration'}
+##' @return A 2-, 3-, or 4-dimensional array depending on input parameters. Cells in output array represent total trip counts.
 ##' 
 ##' @author John Giles
+##' 
+##' @example R/examples/mob_data_array.R
 ##'
 ##' @family data synthesis
 ##' 
 ##' @export
 ##' 
 
-mob.data.array <- function(d,                            # data
-                           time='month',                 # temporal interval
-                           variable='duration',          # character string giving the response variable: 'distance' or 'duration'
-                           agg.int=1,                     # aggregation interval (for duration: length of epidemic generation in days, for distance it is number of km)
-                           verbose=TRUE
+mob.data.array <- function(orig,                            
+                           dest,                     
+                           time=NULL,
+                           count,
+                           variable=NULL,
+                           name,                       # name of the response variable
+                           agg.int=1                   # aggregation interval for the response variable (for duration: length of epidemic generation in days, for distance it is number of km)
 ) {
      
-     if (variable == 'distance') {
+     message(paste(":: Variable is", name, "::"))
+     
+     if (name == 'distance') {
           
-          print("Variable is distance")
+          message(paste("Aggregating to", agg.int, "km...", sep=' '))
           
-          n.int <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
-          orig <- sort(unique(d$from))
-          t <- sort(unique(d[,time]))       
-          ints <- 1:n.int
+          n.int <- ceiling(max(variable, na.rm=TRUE)/agg.int)
+          ints <- seq(0, agg.int*n.int, agg.int)
+          index <- factor(.bincode(variable, ints, right=FALSE), levels=1:n.int)
           
-          # Intialize array
-          out <- array(numeric(), 
-                       dim=c(length(orig), 
-                             length(t), 
-                             n.int))
+          message("Building data array...")
           
-          print("Initialized out array")
-          
-          # populate NA array with observed counts
-          for (i in 1:nrow(d)) {
+          if (is.null(time)) {
                
-               if (verbose == TRUE) {
-                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-               }
+               d <- data.frame(orig, dest, index, count)
+               out <- reshape2::acast(d, orig ~ dest ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', 'destination', name) 
+               dimnames(out)[[3]] <- ints[-1]
                
-               if (all(is.na(d[i,]))) (next)
+          } else if (!is.null(time)) {
                
-               sel <- out[which(orig == d[i, 'from']), 
-                          which(t == d[i, time]), 
-                          ceiling(d[i, variable]/agg.int)]
-               
-               if (is.na(sel)) {
-                    
-                    out[which(orig == d[i, 'from']), 
-                        which(t == d[i, time]), 
-                        ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
-                    
-               } else {
-                    
-                    out[which(orig == d[i, 'from']), 
-                        which(t == d[i, time]), 
-                        ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
-               }
+               d <- data.frame(orig, dest, time, index, count)
+               out <- reshape2::acast(d, orig ~ dest ~ time ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', 'destination', 'time', name) 
+               dimnames(out)[[4]] <- ints[-1]
           }
           
-          dimnames(out) <- list(origin=orig, time=t, distance=1:ceiling(max(d[,variable], na.rm=TRUE)))
+     } else if (name == 'duration') {
           
-     } else if (variable == 'duration') {
+          message(paste("Aggregating to generation time of", agg.int, "days...", sep=' '))
           
-          print("Variable is duration")
+          n.int <- ceiling(max(variable, na.rm=TRUE)/agg.int)
+          ints <- seq(0, agg.int*n.int, agg.int)
+          index <- factor(.bincode(variable, ints, right=TRUE), levels=1:n.int)
           
-          n.gen <- ceiling(max(d[,variable], na.rm=TRUE)/agg.int)
-          orig <- sort(unique(d$from))  
-          dest <- sort(unique(d$to))
-          t <- sort(unique(d[,time]))                
-          g <- 1:n.gen
+          message("Building data array...")
           
-          # Intialize array
-          out <- array(numeric(), 
-                       dim=c(length(orig), 
-                             length(dest), 
-                             length(t), 
-                             n.gen))
-          
-          print("Initialized out array")
-          
-          # populate NA array with observed counts
-          for (i in 1:nrow(d)) {
+          if (is.null(time)) {
                
-               if (verbose == TRUE) {
-                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-               }
+               d <- data.frame(orig, dest, index, count)
+               out <- reshape2::acast(d, orig ~ dest ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', 'destination', name) 
+               dimnames(out)[[3]] <- ints[-1]
                
-               if (all(is.na(d[i,]))) (next)
-               if (d[i, variable] > agg.int*n.gen) (next)
+          } else if (!is.null(time)) {
                
-               sel <- out[which(orig == d[i, 'from']), 
-                          which(dest == d[i, 'to']), 
-                          which(t == d[i, time]),
-                          ceiling(d[i, variable]/agg.int)]
-               
-               if (is.na(sel)) {
-                    
-                    out[which(orig == d[i, 'from']), 
-                        which(dest == d[i, 'to']), 
-                        which(t == d[i, time]),
-                        ceiling(d[i, variable]/agg.int)] <- d[i, 'count']
-                    
-               } else {
-                    
-                    out[which(orig == d[i, 'from']), 
-                        which(dest == d[i, 'to']), 
-                        which(t == d[i, time]),
-                        ceiling(d[i, variable]/agg.int)] <- sel + d[i, 'count']
-               }
+               d <- data.frame(orig, dest, time, index, count)
+               out <- reshape2::acast(d, orig ~ dest ~ time ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', 'destination', 'time', name) 
+               dimnames(out)[[4]] <- ints[-1]
           }
           
-          if (agg.int == 1) {
-               dimnames(out) <- list(origin=orig, destination=dest, time=t, duration=g)
-               print("NOTE: Variable name is 'duration' because agg.int = 1")
-          } else {
-               dimnames(out) <- list(origin=orig, destination=dest, time=t, generation=g)
-               print("NOTE: Variable name is 'generation' because agg.int > 1")
+     } else if (name == 'movement') {
+          
+          message("Building data array...")
+          
+          if (is.null(time)) {
+               
+               d <- data.frame(orig, dest, count)
+               out <- reshape2::acast(d, orig ~ dest, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', 'destination') 
+               
+          } else if (!is.null(time)) {
+               
+               d <- data.frame(orig, dest, time, count)
+               out <- reshape2::acast(d, orig ~ dest ~ time, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', 'destination', 'time') 
           }
           
-     } else if (variable == 'movement') {
+     } else if (name == 'leave') {
           
-          print("Variable is movement")
+          message("Building data array...")
           
-          orig <- sort(unique(d$from))  
-          dest <- sort(unique(d$to))
-          t <- sort(unique(d[,time]))
-          
-          # Intialize array
-          out <- array(numeric(), 
-                       dim=c(length(orig), 
-                             length(dest), 
-                             length(t)))
-          
-          print("Initialized out array")
-          
-          # populate NA array with observed counts
-          for (i in 1:nrow(d)) {
+          if (is.null(time)) {
                
-               if (verbose == TRUE) {
-                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-               }
+               d <- data.frame(orig, dest, count)
+               out <- reshape2::acast(d, orig ~ dest, sum, value.var='count', drop=FALSE, fill=NaN)
+               out <- apply(out, 1, function(x) sum(x, na.rm=TRUE))
                
-               if (all(is.na(d[i,]))) (next)
+          } else if (!is.null(time)) {
                
-               sel <- out[which(orig == d[i, 'from']), 
-                          which(dest == d[i, 'to']), 
-                          which(t == d[i, time])]
+               d <- data.frame(orig, dest, time, count)
+               out <- reshape2::acast(d, orig ~ dest ~ time, sum, value.var='count', drop=FALSE, fill=NaN)
+               out <- apply(out, c(1,3), function(x) sum(x, na.rm=TRUE))
+               names(dimnames(out)) <- c('origin', 'time') 
                
-               if (is.na(sel)) {
-                    
-                    out[which(orig == d[i, 'from']), 
-                        which(dest == d[i, 'to']), 
-                        which(t == d[i, time])] <- d[i, 'count']
-                    
-               } else {
-                    
-                    out[which(orig == d[i, 'from']), 
-                        which(dest == d[i, 'to']), 
-                        which(t == d[i, time])] <- sel + d[i, 'count']
-               }
           }
-          
-          dimnames(out) <- list(origin=orig, destination=dest, time=t)
-          
-     } else if (variable == 'leave') {
-          
-          print("Variable is leave")
-          
-          orig <- sort(unique(d$from))  
-          t <- sort(unique(d[,'date']))
-          
-          # Intialize array
-          out <- array(numeric(), dim=c(length(t), length(orig)))
-          
-          print("Initialized out array")
-          
-          # populate NA array with observed counts
-          for (i in 1:nrow(d)) {
-               
-               if (verbose == TRUE) {
-                    print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-               }
-               
-               if (all(is.na(d[i,]))) (next)
-               
-               sel <- out[which(t == d[i, 'date']), which(orig == d[i, 'from'])]
-               
-               if (is.na(sel)) {
-                    
-                    out[which(t == d[i, 'date']), which(orig == d[i, 'from'])] <- d[i, 'count']
-                    
-               } else {
-                    
-                    out[which(t == d[i, 'date']), which(orig == d[i, 'from'])] <- sel + d[i, 'count']
-               }
-          }
-          
-          dimnames(out) <- list(time=t, origin=orig)
      }
      
-     print("Finished mob.data.array")
      return(out)
 }
+
 
 ##' Reduce a mob.data.array object to route-level
 ##' 
