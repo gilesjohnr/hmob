@@ -746,16 +746,17 @@ mob.data.array <- function(orig,
 
 ##' Reduce a mob.data.array object to route-level
 ##' 
-##' This function reduces the output from the \code{\link{mob.data.array}} function---which contains data for the
-##' month-level---to a route-level data array. The route-level array contains the mean value across all
-##' months.
+##' This function reduces data array output from the \code{\link{mob.data.array}} function to a route-level matrix that contains the mean trip count. The mean trip count
+##' will represent the mean taken across whatever temporal interval was used in the \code{\link{mob.data.array}} function. 
 ##' 
-##' @param x Month-level Output from the \code{\link{mob.data.array}} function
-##' @param variable The variable in the data object (expects either \code{'distance'}, \code{'duration'}, or \code{'movement'})
+##' @param x An array produced by the \code{\link{mob.data.array}} function
+##' @param variable The variable in the array (expects either \code{'distance'}, \code{'duration'}, or \code{'movement'})
 ##' 
-##' @return A 2-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 3-dimensional array when \code{variable = 'duration'}
+##' @return A 2-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 3-dimensional array when \code{variable = 'duration'}. Cells give the mean trip count taken across the temporal interval of the input array.
 ##' 
 ##' @author John Giles
+##' 
+##' @example R/examples/mob_data_array_route.R
 ##'
 ##' @family model processing
 ##' 
@@ -791,16 +792,16 @@ mob.data.array.route.level <- function(x,              # output from mob.data.ar
 
 ##' Reduce a mob.data.array object to population-level
 ##' 
-##' This function reduces the output from the \code{\link{mob.data.array}} function---which contains data for the
-##' month-level---to a vector giving the population mean. The population-level vector contains the observed mean 
-##' value of the response variable across all routes and months.
+##' This function reduces data array output from the \code{\link{mob.data.array}} function to the population-level by taking the mean trip count all routes and temporal intervals.
 ##' 
-##' @param x Month-level output from the \code{\link{mob.data.array}} function
+##' @param x Array output from the \code{\link{mob.data.array}} function
 ##' @param variable The variable in the data object (expects either \code{'distance'} or \code{'duration'})
 ##' 
 ##' @return vector
 ##' 
 ##' @author John Giles
+##' 
+##' @example R/examples/mob_data_array_route.R
 ##'
 ##' @family model processing
 ##' 
@@ -1697,7 +1698,7 @@ sim.TSIR.full <- function(
           
           cl <- makePSOCKcluster(n.cores)
           registerDoParallel(cl) 
-          print(paste(class(cl)[1], 'with', getDoParWorkers(), 'cores named', getDoParName(), 'was initiated.', sep=' '), quote=FALSE)
+          if (getDoParRegistered()) print(paste(class(cl)[1], 'with', getDoParWorkers(), 'cores named', getDoParName(), 'was initiated.', sep=' '), quote=FALSE)
      }
      
      out <- foreach(i=1:N.sim1, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {

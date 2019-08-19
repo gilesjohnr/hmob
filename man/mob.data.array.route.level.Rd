@@ -7,17 +7,54 @@
 mob.data.array.route.level(x, variable)
 }
 \arguments{
-\item{x}{Month-level Output from the \code{\link{mob.data.array}} function}
+\item{x}{An array produced by the \code{\link{mob.data.array}} function}
 
-\item{variable}{The variable in the data object (expects either \code{'distance'}, \code{'duration'}, or \code{'movement'})}
+\item{variable}{The variable in the array (expects either \code{'distance'}, \code{'duration'}, or \code{'movement'})}
 }
 \value{
-A 2-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 3-dimensional array when \code{variable = 'duration'}
+A 2-dimensional array when \code{variable = 'distance'} or \code{'movement'}, and a 3-dimensional array when \code{variable = 'duration'}. Cells give the mean trip count taken across the temporal interval of the input array.
 }
 \description{
-This function reduces the output from the \code{\link{mob.data.array}} function---which contains data for the
-month-level---to a route-level data array. The route-level array contains the mean value across all
-months.
+This function reduces data array output from the \code{\link{mob.data.array}} function to a route-level matrix that contains the mean trip count. The mean trip count
+will represent the mean taken across whatever temporal interval was used in the \code{\link{mob.data.array}} function.
+}
+\examples{
+# Month-level movement matrix
+m <- mob.data.array(orig=df$from,
+                    dest=df$to,
+                    time=df$month,
+                    count=df$count,
+                    name='movement')
+str(m)
+
+# Mean-monthly movement for each route
+m2 <- mob.data.array.pop.level(m, 'movement')
+
+
+# Route-level distance matrix
+m <- mob.data.array(orig=df$from,
+                    dest=df$to,
+                    count=df$count,
+                    variable=df$distance,
+                    agg.int=10, # count trips per 10km intervals
+                    name='distance')
+
+# Mean trip counts at each 10km distance interval for each origin
+m2 <- mob.data.array.route.level(m, 'distance')
+
+
+# Month-level aggregated duration matrix 
+m <- mob.data.array(orig=df$from,
+                    dest=df$to,
+                    time=df$month,
+                    count=df$count,
+                    variable=df$duration,
+                    agg.int=3, # aggregated to a generation time of 3 days
+                    name='duration')
+str(m)
+
+# Mean monthly trip duration count for each route
+m2 <- mob.data.array.route.level(m, 'duration')
 }
 \seealso{
 Other model processing: \code{\link{calc.decay.stats}},
