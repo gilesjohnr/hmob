@@ -4,10 +4,10 @@
 \alias{calc.prop.route.type}
 \title{Calculate observed proportion of each route type}
 \usage{
-calc.prop.route.type(d, hi, lo)
+calc.prop.route.type(m, hi, lo)
 }
 \arguments{
-\item{d}{A longform data.frame produced by the _ function, which contains trip duration data}
+\item{m}{A 3-dimensional data array produced by the \code{\link{mob.data.array}} function containing total trip counts (dimensions are origin, destination, time)}
 
 \item{hi}{A vector of numerical district IDs in the high population density group}
 
@@ -18,7 +18,7 @@ A dataframe with four rows with values between 0 and 1, rows sum to 1
 }
 \description{
 This function calculates the observed proportion of each of the four route types for 
-each day in the trip duration data. The route types are defined by the population density 
+each temporal unit in a mobility data array. The route types are defined by the population density 
 of the origin and destination districts:
 \enumerate{
   \item High density to high density (HH)
@@ -28,13 +28,33 @@ of the origin and destination districts:
 }
 }
 \examples{
+# Subset of 5 high pop density and 7 low pop density
 d <- read.csv("BeyondCommuting2/trip_lengths/trip_durations_longform_metadata_12_dists_hi_lo_dens.csv", stringsAsFactors=F)
+pop <- read.csv("./data/population_data.csv")
 
-test <- calc.prop.route.type(d=d, 
-                             hi=c(42,13,3,87,34), 
-                             lo=c(10,15,14,48,29,103,64))
+cutoff <- 980
+hi <- pop$ID_2[pop$density >= cutoff]
+lo <- pop$ID_2[pop$density < cutoff]
 
-boxplot.matrix(as.matrix(test[,2:5]), col='lightblue')
+m <- mob.data.array(orig=d$from,
+                    dest=d$to,
+                    time=d$day, # total trip counts for each unique day
+                    count=d$count,
+                    name='movement')
+str(m)
+
+p <- calc.prop.route.type(m, hi, lo)
+
+boxplot.matrix(as.matrix(p[,2:5]), col='lightblue')
+
+cutoff <- 100
+hi <- pop$ID_2[pop$density >= cutoff]
+lo <- pop$ID_2[pop$density < cutoff]
+
+p <- calc.prop.route.type(m, hi, lo)
+
+boxplot.matrix(as.matrix(p[,2:5]), col='lightblue')
+
 
 }
 \seealso{

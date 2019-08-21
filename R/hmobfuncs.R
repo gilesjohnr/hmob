@@ -1494,7 +1494,7 @@ sim.TSIR <- function(districts,                 # Vector of district names
 ##' Calculate observed proportion of each route type
 ##'
 ##' This function calculates the observed proportion of each of the four route types for 
-##' each day in the trip duration data. The route types are defined by the population density 
+##' each temporal unit in a mobility data array. The route types are defined by the population density 
 ##' of the origin and destination districts:
 ##' \enumerate{
 ##'   \item High density to high density (HH)
@@ -1503,7 +1503,7 @@ sim.TSIR <- function(districts,                 # Vector of district names
 ##'   \item Low density to low density (LL)
 ##' }
 ##' 
-##' @param d A longform data.frame produced by the _ function, which contains trip duration data
+##' @param m A 3-dimensional data array produced by the \code{\link{mob.data.array}} function containing total trip counts (dimensions are origin, destination, time)
 ##' @param hi A vector of numerical district IDs in the high population density group
 ##' @param lo A vector of numerical district IDs in the low population density group
 ##' 
@@ -1518,43 +1518,21 @@ sim.TSIR <- function(districts,                 # Vector of district names
 ##' @export
 ##' 
 
-calc.prop.route.type <- function(d,      # longform data frame
-                                 hi,     # vector of numerical district IDs in the high population density group
-                                 lo      # vector of numerical district IDs in the low population density group
+calc.prop.route.type <- function(
+     m,      # mobility data array
+     hi,     # vector of numerical district IDs in the high population density group
+     lo      # vector of numerical district IDs in the low population density group
 ) {
      
-     out <- data.frame(date=sort(unique(d$date)), HH=0, HL=0, LH=0, LL=0)
+     tot <- apply(m, 3, function(x) sum(x, na.rm=TRUE)) # sum of total trips across routes
      
-     for (i in 1:nrow(d)) {
-          
-          print(paste(i, "of", nrow(d), "---", round((i/nrow(d))*100), "%", sep= " "))
-          
-          if (d$from[i] %in% hi & d$to[i] %in% hi) {
-               
-               out$HH[out$date == d[i, 'date']] <- out$HH[out$date == d[i, 'date']] + d[i, 'count']
-               
-          } else if (d$from[i] %in% hi & d$to[i] %in% lo) {
-               
-               out$HL[out$date == d[i, 'date']] <- out$HL[out$date == d[i, 'date']] + d[i, 'count']
-               
-          } else if (d$from[i] %in% lo & d$to[i] %in% lo) {
-               
-               out$LL[out$date == d[i, 'date']] <- out$LL[out$date == d[i, 'date']] + d[i, 'count']
-               
-          }  else if (d$from[i] %in% lo & d$to[i] %in% hi) {
-               
-               out$LH[out$date == d[i, 'date']] <- out$LH[out$date == d[i, 'date']] + d[i, 'count']
-          }
-     }
-     
-     print("Calculating proportions", quote=FALSE)
-     
-     for (i in 1:nrow(out)){
-          
-          out[i,2:5] <- out[i,2:5] / sum(d[d$date == out[i, 'date'],'count'])
-     }
-     
-     return(out)
+     return(
+          data.frame(time=names(tot), 
+                     HH=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% hi,], 3, function(x) sum(x, na.rm=TRUE))/tot, 
+                     HL=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% lo,], 3, function(x) sum(x, na.rm=TRUE))/tot, 
+                     LL=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% lo,], 3, function(x) sum(x, na.rm=TRUE))/tot, 
+                     LH=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% hi,], 3, function(x) sum(x, na.rm=TRUE))/tot)  
+     )
 }
 
 ##' Combine two TSIR scenarios
