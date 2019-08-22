@@ -1523,15 +1523,16 @@ calc.prop.route.type <- function(
      hi,     # vector of numerical district IDs in the high population density group
      lo      # vector of numerical district IDs in the low population density group
 ) {
+     func <- function(x) sum(x, na.rm=TRUE)
      
-     tot <- apply(m, 3, function(x) sum(x, na.rm=TRUE)) # sum of total trips across routes
+     tot <- apply(m, 3, func) # total trips across routes for each time
      
      return(
           data.frame(time=names(tot), 
-                     HH=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% hi,], 3, function(x) sum(x, na.rm=TRUE))/tot, 
-                     HL=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% lo,], 3, function(x) sum(x, na.rm=TRUE))/tot, 
-                     LL=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% lo,], 3, function(x) sum(x, na.rm=TRUE))/tot, 
-                     LH=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% hi,], 3, function(x) sum(x, na.rm=TRUE))/tot)  
+                     HH=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% hi,], 3, func)/tot, 
+                     HL=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% lo,], 3, func)/tot, 
+                     LL=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% lo,], 3, func)/tot, 
+                     LH=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% hi,], 3, func)/tot)  
      )
 }
 
@@ -2105,12 +2106,12 @@ calc.samp.size <- function(x) {
 
 ##' Find the subset of districts which have a minumim number of samples
 ##'
-##' This function takes the output from a the \code{mob.data.array.route.level} function and finds the 
+##' This function takes the output from a the \code{mob.data.array} function and finds the 
 ##' largest subset of locations (districts) that have a minumum number of observations for all \eqn{ij} routes. The subset
 ##' is found by sequentially removing the location with the largest number of routes below the defined 
 ##' threshold (\code{min.samp}) until all locations contain at least \code{min.samp} number of observations for each route.
 ##' 
-##' @param x a three dimensional array produced by the \code{mob.data.array.route.level} function 
+##' @param x a three dimensional array produced by the \code{mob.data.array} function 
 ##' @param min.locations minimum number of locations (rows and columns) to keep
 ##' @param min.samp minimum sample size
 ##' 
@@ -2126,7 +2127,7 @@ calc.samp.size <- function(x) {
 ##' 
 
 get.subsamp <- function(
-     x,              # y.route route-level data array
+     x,              # 3D mobility data array
      min.locations,  # minimum number of locations (rows and columns) to keep
      min.samp        # minumum sample size
 ) {
