@@ -22,8 +22,8 @@ load('./data/duration_data_arrays_3day_full.Rdata') # y.month, y.route, y.pop
 samp.size <- calc.samp.size(y.route)
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.route.type}},
-  \code{\link{calc.prop.tot.trips}},
+Other data synthesis: \code{\link{calc.prop.tot.trips}},
+  \code{\link{calc.route.type}},
   \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},
   \code{\link{get.district.names.xy}},

@@ -56,7 +56,7 @@ calc.prop.tot.trips(variable=d$distance,
                     n.cores=4)
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.route.type}},
+Other data synthesis: \code{\link{calc.route.type}},
   \code{\link{calc.samp.size}},
   \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},

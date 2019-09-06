@@ -61,8 +61,8 @@ plot3D::hist3D(x=as.numeric(rownames(m)), y=as.numeric(colnames(m)), z=log(m+1),
                space=0.05, lighting=T, light="diffuse")
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.route.type}},
-  \code{\link{calc.prop.tot.trips}},
+Other data synthesis: \code{\link{calc.prop.tot.trips}},
+  \code{\link{calc.route.type}},
   \code{\link{calc.samp.size}},
   \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},

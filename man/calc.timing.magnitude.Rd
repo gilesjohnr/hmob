@@ -9,7 +9,7 @@ calc.timing.magnitude(sim, N, pathogen, intro)
 \arguments{
 \item{sim}{simulation object containing simulations with both basic gravity and gravity with duration}
 
-\item{N}{vector of population size of each district}
+\item{N}{a named vector of population size of each district}
 
 \item{pathogen}{name of pathogen}
 

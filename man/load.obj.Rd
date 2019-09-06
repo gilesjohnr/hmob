@@ -2,7 +2,7 @@
 % Please edit documentation in R/hmobfuncs.R
 \name{load.obj}
 \alias{load.obj}
-\title{Load .Rdata file to an object}
+\title{Load specific objects in a .Rdata file}
 \usage{
 load.obj(x = 1, file)
 }
@@ -15,11 +15,13 @@ load.obj(x = 1, file)
 an R object
 }
 \description{
-This function a .Rdata file and loads the first item into the current environment as an object.
+This function takes a .Rdata file and loads the indexed item(s) into the current environment as an object.
 }
 \examples{
 
 sim <- load.obj("./output/TSIR_sim_influenza_high.Rdata")
+
+y.route <- load.obj(3, './data/duration_data_arrays_1day_full.Rdata')  # y.route only
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},

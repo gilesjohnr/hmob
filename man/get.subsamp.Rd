@@ -7,7 +7,7 @@
 get.subsamp(x, min.locations, min.samp)
 }
 \arguments{
-\item{x}{a three dimensional array produced by the \code{mob.data.array.route.level} function}
+\item{x}{a three dimensional array produced by the \code{mob.data.array} function}
 
 \item{min.locations}{minimum number of locations (rows and columns) to keep}
 
@@ -17,7 +17,7 @@ get.subsamp(x, min.locations, min.samp)
 a three dimensional array containing the subset of \code{x}
 }
 \description{
-This function takes the output from a the \code{mob.data.array.route.level} function and finds the 
+This function takes the output from a the \code{mob.data.array} function and finds the 
 largest subset of locations (districts) that have a minumum number of observations for all \eqn{ij} routes. The subset
 is found by sequentially removing the location with the largest number of routes below the defined 
 threshold (\code{min.samp}) until all locations contain at least \code{min.samp} number of observations for each route.
@@ -31,8 +31,8 @@ district.subset <- dimnames(subsamp)$origin
 trip.map(as.numeric(district.subset))
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.route.type}},
-  \code{\link{calc.prop.tot.trips}},
+Other data synthesis: \code{\link{calc.prop.tot.trips}},
+  \code{\link{calc.route.type}},
   \code{\link{calc.samp.size}},
   \code{\link{get.distance.class}},
   \code{\link{get.distance.counts}},

@@ -903,19 +903,19 @@ get.param.vals <- function(
                out.sd <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% mean.labs]
+                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% sd.labs]
                     }
                
                out.lo95 <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% mean.labs]
+                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% lo95.labs]
                     } 
                
                out.hi95 <- foreach(i=1:n.districts, .combine='rbind') %:%
                     foreach(j=1:n.districts, .combine='c') %dopar% {
                          
-                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% mean.labs]
+                         stats[row.names(stats) == paste(name, '[', i, ',', j, ']', sep=''), colnames(stats) %in% hi95.labs]
                     } 
                
                dimnames(out.mean) <- dimnames(out.sd) <- dimnames(out.lo95) <- dimnames(out.hi95) <- NULL
@@ -1491,9 +1491,9 @@ sim.TSIR <- function(districts,                 # Vector of district names
      return(list(tsir=y, tot.inf=tot.inf, spatial.hazard=h, wait.time=w))
 }
 
-##' Calculate observed proportion of each route type
+##' Calculate observed number of trips of each route type
 ##'
-##' This function calculates the observed proportion of each of the four route types for 
+##' This function calculates the observed number of trips of each of the four route types for 
 ##' each temporal unit in a mobility data array. The route types are defined by the population density 
 ##' of the origin and destination districts:
 ##' \enumerate{
@@ -1506,33 +1506,51 @@ sim.TSIR <- function(districts,                 # Vector of district names
 ##' @param m A 3-dimensional data array produced by the \code{\link{mob.data.array}} function containing total trip counts (dimensions are origin, destination, time)
 ##' @param hi A vector of numerical district IDs in the high population density group
 ##' @param lo A vector of numerical district IDs in the low population density group
+##' @param per.route logical indicating whether or not to scale number of trips by the number of routes in each route type
 ##' 
-##' @return A dataframe with four rows with values between 0 and 1, rows sum to 1 
+##' @return A five column dataframe. If \code{per.route = FALSE}, then counts represent raw number of total trips.  If \code{per.route = TRUE}, then counts represent total trips per route.
 ##' 
 ##' @author John Giles
 ##' 
-##' @example R/examples/prop_route_type.R
+##' @example R/examples/calc_route_type.R
 ##'
 ##' @family data synthesis
 ##' 
 ##' @export
 ##' 
 
-calc.prop.route.type <- function(
+calc.route.type <- function(
      m,      # mobility data array
      hi,     # vector of numerical district IDs in the high population density group
-     lo      # vector of numerical district IDs in the low population density group
+     lo,      # vector of numerical district IDs in the low population density group
+     per.route=FALSE #logical indicating whether or not to scale number of trips by the number of routes in each route type
 ) {
+     
+     if(!all(c(hi, lo) %in% dimnames(m)[[1]])) {
+          stop("Check that all locations in 'hi' and 'lo' groups exist in mobility data array")
+     }
+     
      func <- function(x) sum(x, na.rm=TRUE)
      
-     tot <- apply(m, 3, func) # total trips across routes for each time
+     if (per.route == TRUE) {
+          
+          message("Calculating total trips per route")
+          n.HH <- length(hi)^2
+          n.LL <- length(lo)^2
+          n.HL <- n.LH <- length(hi)*length(lo)
+          
+     } else if (per.route == FALSE) {
+          
+          message("Calculating raw number of total trips")
+          n.HH <- n.LL <- n.HL <- n.LH <- 1
+     }
      
      return(
-          data.frame(time=names(tot), 
-                     HH=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% hi,], 3, func)/tot, 
-                     HL=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% lo,], 3, func)/tot, 
-                     LL=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% lo,], 3, func)/tot, 
-                     LH=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% hi,], 3, func)/tot)  
+          data.frame(time=dimnames(m)[[3]], 
+                     HH=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% hi,], 3, func)/n.HH, 
+                     HL=apply(m[dimnames(m)$origin %in% hi, dimnames(m)$destination %in% lo,], 3, func)/n.HL, 
+                     LL=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% lo,], 3, func)/n.LL, 
+                     LH=apply(m[dimnames(m)$origin %in% lo, dimnames(m)$destination %in% hi,], 3, func)/n.LH)  
      )
 }
 
@@ -1877,7 +1895,7 @@ calc.prop.inf <- function(
 ##' distribution and the mean proportion infected in each district.
 ##' 
 ##' @param sim simulation object containing simulations with both basic gravity and gravity with duration
-##' @param N vector of population size of each district
+##' @param N a named vector of population size of each district
 ##' @param pathogen name of pathogen
 ##' @param intro type of introduction
 ##' 
@@ -1900,7 +1918,7 @@ calc.timing.magnitude <- function(
 ) {
      
      districts <- colnames(sim$B$tot.inf)
-     N <- N[which(N$ID %in% districts), 'N']
+     N <- N[which(names(N) %in% districts)]
      
      # Calculate mean proportion infected in each district
      prop.inf.basic <- calc.prop.inf(sim$B$tot.inf, N=N)
@@ -1929,9 +1947,9 @@ calc.timing.magnitude <- function(
      return(out)
 }
 
-##' Load .Rdata file to an object
+##' Load specific objects in a .Rdata file
 ##'
-##' This function a .Rdata file and loads the first item into the current environment as an object.
+##' This function takes a .Rdata file and loads the indexed item(s) into the current environment as an object.
 ##' 
 ##' @param x the index corresponding to the desired object (default = 1)
 ##' @param file filepath to .Rdata object
@@ -2214,7 +2232,7 @@ calc.prop.tot.trips <- function(
                     
                     print(paste(i, "of", length(vals), "values ---", round((i/length(vals))*100), "%", sep= " "))
                     
-                    out[i] <- sum(counts[variable > tmp[i-1] & variable <= tmp[i]], na.rm=TRUE)
+                    out[i] <- sum(counts[variable > vals[i-1] & variable <= vals[i]], na.rm=TRUE)
                }
           }
      } else if (parallel == TRUE) {
