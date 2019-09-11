@@ -642,6 +642,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 ##' @export
 ##' 
 
+
 mob.data.array <- function(orig,                            
                            dest,                     
                            time=NULL,
@@ -665,17 +666,17 @@ mob.data.array <- function(orig,
           
           if (is.null(time)) {
                
-               d <- data.frame(orig, dest, index, count)
-               out <- reshape2::acast(d, orig ~ dest ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
-               names(dimnames(out)) <- c('origin', 'destination', name) 
-               dimnames(out)[[3]] <- ints[-1]
+               d <- data.frame(orig, index, count)
+               out <- reshape2::acast(d, orig ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', name) 
+               dimnames(out)[[2]] <- ints[-1]
                
           } else if (!is.null(time)) {
                
-               d <- data.frame(orig, dest, time, index, count)
-               out <- reshape2::acast(d, orig ~ dest ~ time ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
-               names(dimnames(out)) <- c('origin', 'destination', 'time', name) 
-               dimnames(out)[[4]] <- ints[-1]
+               d <- data.frame(orig, time, index, count)
+               out <- reshape2::acast(d, orig ~ time ~ index, sum, value.var='count', drop=FALSE, fill=NaN)
+               names(dimnames(out)) <- c('origin', 'time', name) 
+               dimnames(out)[[3]] <- ints[-1]
           }
           
      } else if (name == 'duration') {
@@ -742,6 +743,7 @@ mob.data.array <- function(orig,
      
      return(out)
 }
+
 
 
 ##' Reduce a mob.data.array object to route-level
