@@ -10,11 +10,11 @@ calc.samp.size(x)
 \item{x}{a three dimensional array produced by the \code{mob.data.array.route.level} function}
 }
 \value{
-a matrix of sample sizes for each \eqn{ij} route
+a named array, matrix, or vector of sample sizes
 }
 \description{
-This function takes the output from a the \code{mob.data.array.route.level} function and calculates
-the sample size of observations for each \eqn{ij} route.
+This function takes the output from a the \code{mob.data.array} or \code{mob.data.array.route.level} functions and calculates
+the sample size of unique observations of the variable along the last dimension of the array (e.g. columns of a 2D matrix or the third dimension in a 3D array)
 }
 \examples{
 load('./data/duration_data_arrays_3day_full.Rdata') # y.month, y.route, y.pop 

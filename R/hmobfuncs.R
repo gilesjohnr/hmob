@@ -644,7 +644,7 @@ get.xy.counts <- function(a, # integer ID of origin district, if NULL all origin
 
 
 mob.data.array <- function(orig,                            
-                           dest,                     
+                           dest=NULL,                     
                            time=NULL,
                            count,
                            variable=NULL,
@@ -2089,12 +2089,12 @@ calc.decay.stats <- function(
 
 ##' Get the sample size of a route-level \code{mob.data.array} matrix object
 ##'
-##' This function takes the output from a the \code{mob.data.array.route.level} function and calculates
-##' the sample size of observations for each \eqn{ij} route.
+##' This function takes the output from a the \code{mob.data.array} or \code{mob.data.array.route.level} functions and calculates
+##' the sample size of unique observations of the variable along the last dimension of the array (e.g. columns of a 2D matrix or the third dimension in a 3D array)
 ##' 
 ##' @param x a three dimensional array produced by the \code{mob.data.array.route.level} function 
 ##' 
-##' @return a matrix of sample sizes for each \eqn{ij} route
+##' @return a named array, matrix, or vector of sample sizes
 ##' 
 ##' @author John Giles
 ##' 
@@ -2107,21 +2107,11 @@ calc.decay.stats <- function(
 
 calc.samp.size <- function(x) {
      
-     n.districts <- dim(x)[1]
+     dims <- dim(x)
      
-     out <- foreach(i=1:n.districts, .combine='rbind') %:%
-          foreach(j=1:n.districts, .combine='c') %do% {
-               
-               if (i == j) {
-                    tmp <- NA
-               } else {
-                    tmp <- sum(!is.na(x[i,j,]))
-               }
-               tmp
-          }
+     message(paste('Calculating sample sizes for unique observations of', names(dimnames(x))[length(dims)], 'along dimension', length(dims), sep=' '))
      
-     dimnames(out) <- dimnames(x)[1:2]
-     return(out)
+     return(apply(x, seq_along(dims)[-length(dims)], function(x) sum(!is.na(x), na.rm=T)))
 }
 
 ##' Find the subset of districts which have a minumim number of samples

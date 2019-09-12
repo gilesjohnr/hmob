@@ -4,8 +4,8 @@
 \alias{mob.data.array}
 \title{Build mobility data array}
 \usage{
-mob.data.array(orig, dest, time = NULL, count, variable = NULL, name,
-  agg.int = 1)
+mob.data.array(orig, dest = NULL, time = NULL, count,
+  variable = NULL, name, agg.int = 1)
 }
 \arguments{
 \item{orig}{a vector of origin districts}
