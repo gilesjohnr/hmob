@@ -2136,7 +2136,7 @@ calc.samp.size <- function(x) {
 ##' @export
 ##' 
 
-function(
+get.subsamp <- function(
      x,              # 3D mobility data array
      min.locations,  # minimum number of locations (rows and columns) to keep
      min.samp        # minumum sample size
@@ -2145,7 +2145,7 @@ function(
      n.districts <- dim(x)[1]
      samp.size <- calc.samp.size(x)
      
-     if (all(diag(samp.size) == 0)) diag(samp.size) <- NA
+     if(all(diag(samp.size) == 0)) diag(samp.size) <- NA
      
      for (i in 1:(n.districts - min.locations)) {
           
