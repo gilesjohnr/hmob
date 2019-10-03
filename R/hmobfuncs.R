@@ -1115,13 +1115,19 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
 
 ##' Get parameters for Beta distribution
 ##'
-##' This function to calculates the two shape parameters (\eqn{a} and \eqn{b}) for the Beta distribution 
-##' using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 0 and one 1.
+##' This function to calculates the two shape parameters for the Beta distribution 
+##' using EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} of a random variable between 0 and 1. 
+##' When the mean and variance are given, the solution is found analytically. When the proportions 
+##' (or probabilities) at each quantile are given, the solution is found numerically using the Nelder-Mead 
+##' optimiation algorithm. Note that the function expects only \code{mu} and \code{sigma} OR \code{quantiles} 
+##' and \code{probs} as arguments.
 ##' 
-##' @param m the mean \eqn{\mu} of a random variable between 0 and 1
-##' @param v the variance \eqn{\sigma^2} of a random variable between 0 and 1
+##' @param mu scalar giving the mean \eqn{\mu}
+##' @param sigma scalar giving the variance \eqn{\sigma^2} 
+##' @param quantiles vector of quantiles for which proportions are observed
+##' @param probs vector of observed proportions
 ##' 
-##' @return A list containing shape parameters \code{a} and \code{b}
+##' @return A list containing the two shape parameters of the Beta distribution
 ##' 
 ##' @author John Giles
 ##'
@@ -1130,9 +1136,45 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
 ##' @export
 ##' 
 
-get.beta.params <- function(m, v) {
-     a <- ((1-m) / v - 1/m) * m^2 
-     list(a=a, b=a * (1 / m-1))
+get.beta.params <- function(mu=NULL, 
+                            sigma=NULL,
+                            quantiles=NULL,
+                            probs=NULL
+) {
+     
+     if (all(!is.null(mu), !is.null(sigma), !is.null(quantiles), !is.null(probs))) {
+          
+          stop('Supply mu and sigma for analytic solution OR quantiles and probs for numeric solution')
+     }
+     
+     if (all(!is.null(mu), !is.null(sigma))) {
+          
+          message('Calculating shape and rate parameters analytically from mean (mu) and variance (sigma)')
+          
+          shape1 <- ((1-mu) / sigma - 1/mu) * mu^2
+          return(list(shape1=shape1, shape2=shape1 * (1 / mu-1)))
+          
+     } else if (all(is.null(mu), is.null(sigma), !is.null(quantiles), !is.null(probs))) {
+          
+          message('Calculating shape and rate parameters numerically from quantiles')
+          
+          fit.beta <- function(x,           # vector of shape and rate parameters for beta distribution
+                               quantiles,   # the quantiles for which proportions are observed
+                               probs        # the observed proportions
+          ) {
+               sum((qbeta(quantiles, x[1], x[2]) - probs)^2) 
+          }
+          
+          suppressWarnings(
+               params <- optim(par=c(1,1), # flat beta distribution to start
+                               fn=fit.beta,
+                               quantiles=quantiles, 
+                               probs=probs,
+                               method='Nelder-Mead')$par
+          )
+          
+          return(list(shape1=params[1], shape2=params[2]))
+     }
 }
 
 ##' Exponential decay function
@@ -2260,3 +2302,85 @@ calc.prop.tot.trips <- function(
      return(out)
 }
 
+
+
+##' Simulate connectivity values using gravity model
+##'
+##' This function uses the gravity model formula to simulate a connectivity matrix based on the supplied model parameters. The 
+##' gravity model formula uses a Gamma distribution as the dispersal kernel in the denominator. If a vector of shape (\code{s}) and rate (\code{r}) parameters
+##' is supplied, the function will simulate route specific dispersal kernels based on the origin location (\eqn{i}). A null model (where all model parameters = 1) can be
+##' simulated by supplying only population sizes (\code{N}) and pairwise distances (\code{D}).
+##' \deqn{
+##'     c_{ij} = \theta \Bigg(\frac{N_{i}^{\omega_1} N_{j}^{\omega_2}}{f_i(d_{ij})} \Bigg)
+##' }
+##' 
+##' @param N vector of population sizes
+##' @param D matrix of distances among all \eqn{ij} pairs
+##' @param theta scalar giving the proportionality constant of gravity formula (default = 1)
+##' @param omega.1 scalar giving exponential scaling of origin population size (default = 1)
+##' @param omega.2 scalar giving exponential scaling of destination population size (default = 1)
+##' @param s scalar or vector giving the shape parameter(s) of the Gamma dispersal kernel(s) (default = 1)
+##' @param r scalar or vector giving the rate parameter(s) of the Gamma dispersal kernel(s) (default = 1)
+##' @counts logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)
+##' 
+##' @return a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/sim_gravity_basic.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+sim.gravity <- function(
+     N,
+     D,
+     theta=1,
+     omega.1=1,
+     omega.2=1,
+     s=1,
+     r=1,
+     counts=FALSE
+) {
+     
+     if (!(identical(length(N), dim(D)[1], dim(D)[1]))) stop('Check dimensions of input data N and D')
+     if (!(length(c(theta, omega.1, omega.2)) == 3)) stop('theta and omega parameters must be scalars')
+     
+     n.districts <- length(N)
+     x <- f.d <- matrix(NA, n.districts, n.districts)
+     
+     for (i in 1:n.districts) {
+          for (j in 1:n.districts) {
+               
+               # Gravity model
+               if (i == j) {
+                    
+                    x[i,j] <- 0
+                    
+               } else {
+                    
+                    # Dispersal kernel
+                    if (length(s) == 1) {
+                         
+                         f.d[i,j] <- exp((s * log(r)) + ((s-1) * log(D[i,j])) - (r * D[i,j]) - log(gamma(s))) + 1e-6
+                         
+                    } else if (length(s) == n.districts) {
+                         
+                         f.d[i,j] <- exp((s[i] * log(r[i])) + ((s[i]-1) * log(D[i,j])) - (r[i] * D[i,j]) - log(gamma(s[i]))) + 1e-6
+                    } else {
+                         
+                         stop('Incorrect length for parameters in Gamma dispersal kernel(s)')
+                    }  
+                    
+                    x[i,j] <- exp(log(theta) + (omega.1*log(N[i]) + omega.2*log(N[j]) - log(f.d[i,j])))
+               }          
+          }
+          
+          x[i,] <- (x[i,]/sum(x[i,]))
+          if (counts == TRUE) x[i,] <- round(x[i,]*N[i])
+     }
+     
+     return(x)
+}

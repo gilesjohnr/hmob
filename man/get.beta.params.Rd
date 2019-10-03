@@ -4,19 +4,28 @@
 \alias{get.beta.params}
 \title{Get parameters for Beta distribution}
 \usage{
-get.beta.params(m, v)
+get.beta.params(mu = NULL, sigma = NULL, quantiles = NULL,
+  probs = NULL)
 }
 \arguments{
-\item{m}{the mean \eqn{\mu} of a random variable between 0 and 1}
+\item{mu}{scalar giving the mean \eqn{\mu}}
 
-\item{v}{the variance \eqn{\sigma^2} of a random variable between 0 and 1}
+\item{sigma}{scalar giving the variance \eqn{\sigma^2}}
+
+\item{quantiles}{vector of quantiles for which proportions are observed}
+
+\item{probs}{vector of observed proportions}
 }
 \value{
-A list containing shape parameters \code{a} and \code{b}
+A list containing the two shape parameters of the Beta distribution
 }
 \description{
-This function to calculates the two shape parameters (\eqn{a} and \eqn{b}) for the Beta distribution 
-using the mean \eqn{\mu} and variance \eqn{\sigma^2} of a variable that between 0 and one 1.
+This function to calculates the two shape parameters for the Beta distribution 
+using EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} of a random variable between 0 and 1. 
+When the mean and variance are given, the solution is found analytically. When the proportions 
+(or probabilities) at each quantile are given, the solution is found numerically using the Nelder-Mead 
+optimiation algorithm. Note that the function expects only \code{mu} and \code{sigma} OR \code{quantiles} 
+and \code{probs} as arguments.
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
@@ -26,9 +35,9 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
   \code{\link{load.obj}}, \code{\link{sim.TSIR.full}},
   \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
-  \code{\link{sim.combine}}, \code{\link{sim.lambda}},
-  \code{\link{sim.pi}}, \code{\link{sim.rho}},
-  \code{\link{sim.tau}}
+  \code{\link{sim.combine}}, \code{\link{sim.gravity}},
+  \code{\link{sim.lambda}}, \code{\link{sim.pi}},
+  \code{\link{sim.rho}}, \code{\link{sim.tau}}
 }
 \author{
 John Giles
