@@ -27,6 +27,22 @@ When the mean and variance are given, the solution is found analytically. When t
 optimiation algorithm. Note that the function expects only \code{mu} and \code{sigma} OR \code{quantiles} 
 and \code{probs} as arguments.
 }
+\examples{
+
+# Duration data for the purpose of subsetting districts
+load('./data/duration_data_arrays_1day_full.Rdata') 
+
+# Proportion travellers remaining for full epidemic generation based on subsample of 10, where the generation time is 14 days (measles)
+p1 <- calc.prop.remain(d=y.route, gen.t=14, sub.samp=10)
+p2 <- calc.prop.remain(d=y.month, gen.t=14, sub.samp=10)
+
+# Get destination-level mean and variance
+p1.mean <- apply(p1, 2, mean, na.rm=TRUE)
+p1.var <- apply(p1, 2, var, na.rm=TRUE)
+
+p2.mean <- apply(p2, 2, mean, na.rm=TRUE)
+p2.var <- apply(p2, 2, var, na.rm=TRUE)
+}
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.prop.inf}},
@@ -35,9 +51,11 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
   \code{\link{load.obj}}, \code{\link{sim.TSIR.full}},
   \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
-  \code{\link{sim.combine}}, \code{\link{sim.gravity}},
-  \code{\link{sim.lambda}}, \code{\link{sim.pi}},
-  \code{\link{sim.rho}}, \code{\link{sim.tau}}
+  \code{\link{sim.combine}},
+  \code{\link{sim.gravity.duration}},
+  \code{\link{sim.gravity}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.rho}},
+  \code{\link{sim.tau}}
 }
 \author{
 John Giles

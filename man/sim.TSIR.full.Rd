@@ -4,22 +4,20 @@
 \alias{sim.TSIR.full}
 \title{Simulate full stochastic TSIR in parallel}
 \usage{
-sim.TSIR.full(districts, n.districts, N, lambda, pi.duration, pi.basic,
-  prop.leave, prop.remain, beta, gamma, gen, I.0, N.sim1, N.sim2 = 100,
-  max.t = 100, freq.dep = TRUE, parallel = FALSE, n.cores = NULL)
+sim.TSIR.full(N, D, B, R, lambda, prop.leave, prop.remain, beta, gamma,
+  gen, I.0, N.sim1, N.sim2 = 100, max.t = 100, freq.dep = TRUE,
+  parallel = FALSE, n.cores = NULL)
 }
 \arguments{
-\item{districts}{Vector of district names}
-
-\item{n.districts}{Number of total districts}
-
 \item{N}{Vector giving the population size of each district}
 
+\item{D}{Distance matrix}
+
+\item{B}{Estimated parameters from basic gravity model}
+
+\item{R}{Estimated parameters from gravity model with duration}
+
 \item{lambda}{Estimated parameters from trip duration decay model (lambda), processed by the \code{\link{get.param.vals}} function}
-
-\item{pi.duration}{Estimated parameters from gravity model with duration (pi), processed by the \code{\link{get.param.vals}} function}
-
-\item{pi.basic}{Estimated parameters from basic gravity model (pi*), processed by the \code{\link{get.param.vals}} function}
 
 \item{prop.leave}{Observed proportion individuals leaving origin at time t in trip duration data}
 
@@ -56,61 +54,62 @@ each stochastic realization of the estimated model parameters (lambda, pi, rho, 
 simulations in parallel and the \code{N.sim2} level simulations sequentially.
 }
 \examples{
-load('./data/N_pop.rdata')                                         # N.pop
-load('./output/decay_model_route_12dists.rdata')                   # mod.decay # Decay model parameters (Lambda)
-load('./output/gravity_model_route_12dists.rdata')                 # mod.grav, M # Gravity model with duration
-load('./output/gravity_model_basic_route_12dists.rdata')           # mod.grav.basic  # Basic gravity model
-load('./data/prop_leave.rdata')                                    # prop.leave # observed proportion individuals leaving origin at time t in trip duration data  
-load('./output/prop_remaining.rdata')                              # p # observed proportion of individuals
+setwd("~/Dropbox/Projects/Mobility/SeasonalCommuting")
 
-districts <- dimnames(M)$origin
-N <- round(N.pop$N[N.pop$ID \%in\% as.integer(districts)])
+# Duration data for the purpose of subsetting districts
+y.route <- load.obj(3, './data/duration_data_arrays_1day_full.Rdata')      # y.month, y.route
+y.route <- get.subsamp(y.route, min.locations=30, min.samp=20)
+
+D <- load.obj(1, './data/distance_matrix_named.rdata')                # distance.matrix
+N <- load.obj(1, './data/N_pop.rdata')  
+B <- load.obj(2, './output/gravity_model_basic_nogamma.Rdata')
+R <- load.obj(2, './output/gravity_model_duration_multialpha_nogamma_meanbasic.Rdata')
+
+load('./output/decay_1day_62dists_summary.Rdata')                   # mod.decay # Decay model parameters (Lambda) 
+load('./output/prop_remain_6pathogens_62dists_subsamp100.Rdata')    # prop.remain # proportion individuals remaining for full generation for each pathogen generation
+load('./data/prop_leave.rdata')                                     # prop.leave # observed proportion individuals leaving origin at time t in trip duration data  
+
+districts.all <- dimnames(D)[[1]] # full set of district names
+districts <- attributes(y.route)$dimnames$origin # subset of 62 districts
 n.districts <- length(districts)
 
-lambda <- get.param.vals(n.districts=n.districts, name='lambda_1', level='route', stats=mod.decay)
-pi.duration <- get.param.vals(n.districts=n.districts, name='pi', level='route', stats=mod.grav)
-pi.basic <- get.param.vals(n.districts=n.districts, name='pi', level='route', stats=mod.grav.basic)
+tmp <- districts.all \%in\% districts
+D <- D[tmp, tmp]
+N <- N[names(N) \%in\% districts]
+prop.leave <- prop.leave[,dimnames(prop.leave)$origin \%in\% districts]
+lambda <- get.param.vals(n.districts=n.districts, name='lambda', level='route', stats=mod.decay)
 
-pathogen <- 'flu'
-introduction <- 'high'
+params <- list(
+     influenza=data.frame(pathogen='influenza', beta=1.5, gamma=0.75, gen=3, yrs=0.6)
+)
 
-beta <- 1.5                             # Transmission rate
-gamma <- 0.75                           # Recovery rate
-gen <- 3                                # Generation time of the pathogen in days
-yrs <- 1                                # Numerber of years to run simulation
-max.t <- ceiling((365*yrs)/gen)
+pathogen <- 'influenza'
+intro.district <- 42
 
-I.0 <- rep(0, length(districts))
-if (introduction == 'high') {
-     
-     I.0[which(districts == '13')] <- 1   # high density introduction  
-     
-} else if (introduction  == 'low') {
-     
-     I.0[which(districts == '14')] <- 1  # low density introduction
-}
+I.0 <- rep(0, n.districts)
+I.0[which(districts == intro.district)] <- 1   # introduction  
 
 t <- Sys.time()
-tmp <- sim.TSIR.full(
-     districts=districts,         # Vector of district names
-     N=N,                         # Vector giving the population size of each district
-     lambda=lambda,               # Decay model parameters (Lambda)
-     pi.basic=pi.basic,           # Gravity model with duration
-     pi.duration=pi.duration,     # Basic gravity model
-     prop.leave=prop.leave,       # observed proportion individuals leaving origin at time t in trip duration data 
-     prop.remain=p,               # observed proportion of individuals remaining in destination j
-     beta=beta,                   # Transmission rate
-     gamma=gamma,                 # Recovery rate
-     gen=gen,                     # Pathogen generation time
-     I.0=I.0,                     # Vector giving number of infected individuals in each district at time 0
-     N.sim1=10,                   # Number of times to simulate matrices of model parameters (lambda, pi, tau, rho)
-     N.sim2=10,                   # Number of times to simulate epidemic outcomes under each realization of model parameters
-     max.t=max.t,                 # Maximum number of generations
-     n.cores=4
+sim <- sim.TSIR.full(
+     N=N,                                                                  # Vector giving the population size of each district
+     D=D,                                                                  # Distance matrix
+     lambda=lambda,                                                        # Decay model parameters (Lambda)
+     B=B,                                                                  # Gravity model with duration
+     R=R,                                                                  # Basic gravity model
+     prop.leave=prop.leave,                                                # observed proportion individuals leaving origin at time t in trip duration data 
+     prop.remain=prop.remain[[which(names(prop.remain) == pathogen)]],     # bserved proportion of individuals remaining in destination j
+     beta=params[[pathogen]]$beta,                                         # Transmission rate
+     gamma=params[[pathogen]]$gamma,                                       # Recovery rate
+     gen=params[[pathogen]]$gen,                                           # Pathogen generation time
+     I.0=I.0,                                                              # Vector giving number of infected individuals in each district at time 0
+     N.sim1=5,                                                             # Number of times to simulate matrices of model parameters (lambda, pi, tau, rho)
+     N.sim2=5,                                                             # Number of times to simulate epidemic outcomes under each realization of model parameters
+     max.t=ceiling((365*params[[pathogen]]$yrs)/params[[pathogen]]$gen),   # Maximum number of generations
+     parallel=TRUE,
+     n.cores=n.cores
 )
 Sys.time() - t
 
-save(tmp, file=paste("./output/TSIR_sim_", pathogen, "_", introduction, ".Rdata", sep=""))
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
@@ -120,9 +119,11 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
   \code{\link{get.beta.params}}, \code{\link{load.obj}},
   \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
-  \code{\link{sim.combine}}, \code{\link{sim.gravity}},
-  \code{\link{sim.lambda}}, \code{\link{sim.pi}},
-  \code{\link{sim.rho}}, \code{\link{sim.tau}}
+  \code{\link{sim.combine}},
+  \code{\link{sim.gravity.duration}},
+  \code{\link{sim.gravity}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.rho}},
+  \code{\link{sim.tau}}
 }
 \author{
 John Giles

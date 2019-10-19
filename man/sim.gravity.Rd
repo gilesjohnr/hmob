@@ -4,8 +4,8 @@
 \alias{sim.gravity}
 \title{Simulate connectivity values using gravity model}
 \usage{
-sim.gravity(N, D, theta = 1, omega.1 = 1, omega.2 = 1, s = 1,
-  r = 1, counts = FALSE)
+sim.gravity(N, D, theta = 1, omega.1 = 1, omega.2 = 1, gamma = 1,
+  counts = FALSE)
 }
 \arguments{
 \item{N}{vector of population sizes}
@@ -18,20 +18,17 @@ sim.gravity(N, D, theta = 1, omega.1 = 1, omega.2 = 1, s = 1,
 
 \item{omega.2}{scalar giving exponential scaling of destination population size (default = 1)}
 
-\item{s}{scalar or vector giving the shape parameter(s) of the Gamma dispersal kernel(s) (default = 1)}
-
-\item{r}{scalar or vector giving the rate parameter(s) of the Gamma dispersal kernel(s) (default = 1)}
+\item{gamma}{scalar giving the dispersal kernel paramater (default = 1)}
 }
 \value{
 a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})
 }
 \description{
 This function uses the gravity model formula to simulate a connectivity matrix based on the supplied model parameters. The 
-gravity model formula uses a Gamma distribution as the dispersal kernel in the denominator. If a vector of shape (\code{s}) and rate (\code{r}) parameters
-is supplied, the function will simulate route specific dispersal kernels based on the origin location (\eqn{i}). A null model (where all model parameters = 1) can be
+gravity model formula uses a Gamma distribution as the dispersal kernel in the denominator. A null model (where all model parameters = 1) can be
 simulated by supplying only population sizes (\code{N}) and pairwise distances (\code{D}).
 \deqn{
-    c_{ij} = \theta \Bigg(\frac{N_{i}^{\omega_1} N_{j}^{\omega_2}}{f_i(d_{ij})} \Bigg)
+    \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
 }
 }
 \examples{
@@ -68,9 +65,10 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{get.beta.params}}, \code{\link{load.obj}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},
-  \code{\link{sim.combine}}, \code{\link{sim.lambda}},
-  \code{\link{sim.pi}}, \code{\link{sim.rho}},
-  \code{\link{sim.tau}}
+  \code{\link{sim.combine}},
+  \code{\link{sim.gravity.duration}},
+  \code{\link{sim.lambda}}, \code{\link{sim.pi}},
+  \code{\link{sim.rho}}, \code{\link{sim.tau}}
 }
 \author{
 John Giles

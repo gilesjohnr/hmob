@@ -46,9 +46,11 @@ Other simulation: \code{\link{calc.prop.inf}},
   \code{\link{get.beta.params}}, \code{\link{load.obj}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},
-  \code{\link{sim.combine}}, \code{\link{sim.gravity}},
-  \code{\link{sim.lambda}}, \code{\link{sim.pi}},
-  \code{\link{sim.rho}}, \code{\link{sim.tau}}
+  \code{\link{sim.combine}},
+  \code{\link{sim.gravity.duration}},
+  \code{\link{sim.gravity}}, \code{\link{sim.lambda}},
+  \code{\link{sim.pi}}, \code{\link{sim.rho}},
+  \code{\link{sim.tau}}
 }
 \author{
 John Giles

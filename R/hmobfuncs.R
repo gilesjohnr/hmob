@@ -1130,6 +1130,8 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
 ##' @return A list containing the two shape parameters of the Beta distribution
 ##' 
 ##' @author John Giles
+##' 
+##' @example R/examples/calc_prop_remain.R
 ##'
 ##' @family simulation
 ##' 
@@ -1176,6 +1178,68 @@ get.beta.params <- function(mu=NULL,
           return(list(shape1=params[1], shape2=params[2]))
      }
 }
+
+
+##' Get parameters of Gamma distribution
+##'
+##' A function that finds the \code{shape} and \code{rate} parameters required by the Gamma distribution given the observed 
+##' mean \code{mu} and standard deviation \code{sigma} of the response variable. Parameters are found numerically using a 
+##' two-dimensional Nelder-Mead optimization algorithm.
+##'
+##' @param mu the desired mean of the Gamma distribution
+##' @param sigma the desired standard deviation of the Gamma distribution
+##'
+##' @return a named numeric vector giving the \code{shape} and \code{rate} parameters of the Gamma distribution
+##'
+##' @family random number generators
+##'
+##' @author John Giles
+##'
+##' @example R/examples/get_gamma_params.R
+##'
+##' @export
+##'
+
+get.gamma.params <- function(mu, sigma) {
+     
+     message('Calculating shape and rate parameters numerically from mean and sd')
+     
+     suppressWarnings(
+          params <- optim(par=c(mu*2, 2),
+                          fn=function(x) abs(mu - x[1]/x[2]) + abs(sigma - sqrt(x[1]/(x[2]^2))),
+                          method='Nelder-Mead')$par
+     )
+     names(params) <- c('shape', 'rate')
+     return(params)
+}
+
+##' Calculate the probability of a Gamma distributed random variable
+##'
+##' A function that calcualtes the probability of random variable \code{x} according to a Gamma probability distribution with provided
+##' \code{shape} and \code{rate} parameters.
+##'
+##' @param mu the desired mean of the Gamma distribution
+##' @param sigma the desired standard deviation of the Gamma distribution
+##'
+##' @return a named numeric vector giving the \code{shape} and \code{rate} parameters of the Gamma distribution
+##'
+##' @family random number generators
+##'
+##' @author John Giles
+##'
+##' @example R/examples/sim_gamma.R
+##'
+##' @export
+##'
+
+sim.gamma <- function(
+     x,
+     shape,
+     rate
+){
+     exp((shape * log(rate)) + ((shape-1) * log(x)) - (rate * x) - log(gamma(shape)))
+}
+
 
 ##' Exponential decay function
 ##'
@@ -1279,7 +1343,7 @@ sim.rho <- function(p,
                foreach(j = 1:dim(p)[2], .combine='c') %do% {
                     
                     suppressWarnings(
-                         x <- rbeta(1, beta.params$a[i,j], beta.params$b[i,j])
+                         x <- rbeta(1, beta.params$shape1[i,j], beta.params$shape2[i,j])
                     )
                }
           
@@ -1361,7 +1425,7 @@ sim.tau <- function(p # matrix giving the probability of leaving origin
      suppressWarnings(
           for (i in 1:ncol(p)) {
                
-               out[i] <- rbeta(1, beta.params$a[i], beta.params$b[i])
+               out[i] <- rbeta(1, beta.params$shape1[i], beta.params$shape2[i])
           } 
      )
      
@@ -1679,12 +1743,11 @@ sim.combine.dual <- function(x,
 ##' each stochastic realization of the estimated model parameters (lambda, pi, rho, tau). The function runs the \code{N.sim1} level
 ##' simulations in parallel and the \code{N.sim2} level simulations sequentially.
 ##' 
-##' @param districts Vector of district names
-##' @param n.districts Number of total districts
 ##' @param N Vector giving the population size of each district
+##' @param D Distance matrix
+##' @param B Estimated parameters from basic gravity model
+##' @param R Estimated parameters from gravity model with duration
 ##' @param lambda Estimated parameters from trip duration decay model (lambda), processed by the \code{\link{get.param.vals}} function
-##' @param pi.duration Estimated parameters from gravity model with duration (pi), processed by the \code{\link{get.param.vals}} function
-##' @param pi.basic Estimated parameters from basic gravity model (pi*), processed by the \code{\link{get.param.vals}} function
 ##' @param prop.leave Observed proportion individuals leaving origin at time t in trip duration data 
 ##' @param prop.remain Observed proportion of individuals remaining in destination j
 ##' @param beta Transmission rate
@@ -1711,12 +1774,11 @@ sim.combine.dual <- function(x,
 ##' 
 
 sim.TSIR.full <- function(
-     districts,                 # Vector of district names
-     n.districts,               # Number of total districts
      N,                         # Vector giving the population size of each district
+     D,                         # Distance matrix
+     B,                         # Basic gravity model output
+     R,                         # Duration gravity model output
      lambda,                    # Decay model parameters (Lambda)
-     pi.duration,               # Gravity model with duration
-     pi.basic,                  # Basic gravity model
      prop.leave,                # observed proportion individuals leaving origin at time t in trip duration data 
      prop.remain,               # observed proportion of individuals remaining in destination j
      beta,                      # Transmission rate
@@ -1731,7 +1793,7 @@ sim.TSIR.full <- function(
      n.cores=NULL                    
 ){
      
-     if(!(identical(n.districts, length(districts), length(N), nrow(pi.duration$mean), nrow(pi.basic$mean), nrow(lambda$mean), nrow(prop.remain)))) {
+     if(!(identical(length(N), nrow(D), nrow(lambda$mean), nrow(prop.remain)))) {
           stop("Dimensions of simulation arguments must match.")
      }
      
@@ -1742,14 +1804,31 @@ sim.TSIR.full <- function(
           if (getDoParRegistered()) print(paste(class(cl)[1], 'with', getDoParWorkers(), 'cores named', getDoParName(), 'was initiated.', sep=' '), quote=FALSE)
      }
      
+     districts <- dimnames(D)[[1]]
+     n.districts <- length(districts)
+     
      out <- foreach(i=1:N.sim1, .combine=sim.combine.dual, .packages=c('hmob', 'abind')) %dopar% {
           
           # Simulate one realization of estimated model parameters
           lambda.hat <- sim.lambda(mu=lambda$mean, sigma=lambda$sd, level='route')
-          pi.hat <- sim.pi(mu=pi.duration$mean, level='route')
-          pi.hat.basic <- sim.pi(mu=pi.basic$mean, level='route')
           rho.hat <- sim.rho(p=prop.remain, level='route')
           tau.hat <- sim.tau(prop.leave)
+          
+          pi.hat.basic <- sim.gravity(N=N,
+                                      D=D,
+                                      theta=B['theta', 'Mean'],
+                                      omega.1=B['omega.1', 'Mean'],
+                                      omega.2=B['omega.2', 'Mean'],
+                                      gamma=B['gamma', 'Mean'])
+          
+          pi.hat <- sim.gravity.duration(N=N,
+                                         D=D,
+                                         theta=B['theta', 'Mean'],
+                                         omega.1=B['omega.1', 'Mean'],
+                                         omega.2=B['omega.2', 'Mean'],
+                                         gamma=B['gamma', 'Mean'],
+                                         lambda=lambda.hat,
+                                         alpha=R[which(row.names(R) == 'alpha[1]'):which(row.names(R) == 'alpha[62]'), 'Mean'])
           
           foreach(j=1:N.sim2, .combine=sim.combine.dual) %do% {
                
@@ -1766,7 +1845,7 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                           
                )
                
-               B <- list(tot.inf=sim$tot.inf,
+               sim.B <- list(tot.inf=sim$tot.inf,
                          epi.curve=sim$tsir[,'I',],
                          wait.time=sim$wait.time)
                
@@ -1786,11 +1865,11 @@ sim.TSIR.full <- function(
                                freq.dep=freq.dep                         
                )
                
-               R <- list(tot.inf=sim$tot.inf,
+               sim.R <- list(tot.inf=sim$tot.inf,
                          epi.curve=sim$tsir[,'I',],
                          wait.time=sim$wait.time)
                
-               list(B=B, R=R)
+               list(B=sim.B, R=sim.R)
           }
      }
      
@@ -2307,11 +2386,10 @@ calc.prop.tot.trips <- function(
 ##' Simulate connectivity values using gravity model
 ##'
 ##' This function uses the gravity model formula to simulate a connectivity matrix based on the supplied model parameters. The 
-##' gravity model formula uses a Gamma distribution as the dispersal kernel in the denominator. If a vector of shape (\code{s}) and rate (\code{r}) parameters
-##' is supplied, the function will simulate route specific dispersal kernels based on the origin location (\eqn{i}). A null model (where all model parameters = 1) can be
+##' gravity model formula uses a Gamma distribution as the dispersal kernel in the denominator. A null model (where all model parameters = 1) can be
 ##' simulated by supplying only population sizes (\code{N}) and pairwise distances (\code{D}).
 ##' \deqn{
-##'     c_{ij} = \theta \Bigg(\frac{N_{i}^{\omega_1} N_{j}^{\omega_2}}{f_i(d_{ij})} \Bigg)
+##'     \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
 ##' }
 ##' 
 ##' @param N vector of population sizes
@@ -2319,8 +2397,7 @@ calc.prop.tot.trips <- function(
 ##' @param theta scalar giving the proportionality constant of gravity formula (default = 1)
 ##' @param omega.1 scalar giving exponential scaling of origin population size (default = 1)
 ##' @param omega.2 scalar giving exponential scaling of destination population size (default = 1)
-##' @param s scalar or vector giving the shape parameter(s) of the Gamma dispersal kernel(s) (default = 1)
-##' @param r scalar or vector giving the rate parameter(s) of the Gamma dispersal kernel(s) (default = 1)
+##' @param gamma scalar giving the dispersal kernel paramater (default = 1)
 ##' @counts logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)
 ##' 
 ##' @return a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})
@@ -2340,13 +2417,12 @@ sim.gravity <- function(
      theta=1,
      omega.1=1,
      omega.2=1,
-     s=1,
-     r=1,
+     gamma=1,
      counts=FALSE
 ) {
      
      if (!(identical(length(N), dim(D)[1], dim(D)[1]))) stop('Check dimensions of input data N and D')
-     if (!(length(c(theta, omega.1, omega.2)) == 3)) stop('theta and omega parameters must be scalars')
+     if (!(length(c(theta, omega.1, omega.2, gamma)) == 4)) stop('theta and omega parameters must be scalars')
      
      n.districts <- length(N)
      x <- f.d <- matrix(NA, n.districts, n.districts)
@@ -2361,18 +2437,7 @@ sim.gravity <- function(
                     
                } else {
                     
-                    # Dispersal kernel
-                    if (length(s) == 1) {
-                         
-                         f.d[i,j] <- exp((s * log(r)) + ((s-1) * log(D[i,j])) - (r * D[i,j]) - log(gamma(s))) + 1e-6
-                         
-                    } else if (length(s) == n.districts) {
-                         
-                         f.d[i,j] <- exp((s[i] * log(r[i])) + ((s[i]-1) * log(D[i,j])) - (r[i] * D[i,j]) - log(gamma(s[i]))) + 1e-6
-                    } else {
-                         
-                         stop('Incorrect length for parameters in Gamma dispersal kernel(s)')
-                    }  
+                    f.d[i,j] <- (D[i,j]^gamma) + 1e-6
                     
                     x[i,j] <- exp(log(theta) + (omega.1*log(N[i]) + omega.2*log(N[j]) - log(f.d[i,j])))
                }          
@@ -2382,5 +2447,103 @@ sim.gravity <- function(
           if (counts == TRUE) x[i,] <- round(x[i,]*N[i])
      }
      
+     dimnames(x) <- list(origin=dimnames(D)[[1]], destination=dimnames(D)[[2]])
      return(x)
 }
+
+
+
+##' Simulate connectivity values using gravity model with trip duration
+##'
+##' This function simulates a connectivity matrix supplied model parameters in a gravitym odel formula that incorporates trip duration by using a conditional dispersal kernel (\eqn{f(d_ij | \lambda_ij)}) in 
+##' the denominator. The gravity model still uses a Gamma distribution as the dispersal kernel, but this is scaled by the probability \eqn{Pr(\lambda_ij | d_ij)} according to Bayes theorem. If a 
+##' vector of shape (\code{s}) and rate (\code{r}) parameters is supplied, the function will simulate route specific dispersal kernels based on the origin location (\eqn{i}). A null model (where all model parameters = 1) 
+##' can be simulated by supplying only population sizes (\code{N}) and pairwise distances (\code{D}).
+##' \deqn{
+##'     \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij | \lambda_ij) )
+##' }
+##' 
+##' @param N vector of population sizes
+##' @param D matrix of distances among all \eqn{ij} pairs
+##' @param theta scalar giving the proportionality constant of gravity formula (default = 1)
+##' @param omega.1 scalar giving exponential scaling of origin population size (default = 1)
+##' @param omega.2 scalar giving exponential scaling of destination population size (default = 1)
+##' @param gamma scalar giving the dispersal kernel paramater (default = 1)
+##' @param lambda matrix of trip duration decay parameters for each \eqn{ij} route
+##' @param alpha model fitting parameter for the ECDF of lambda (default = 1)
+##' @counts logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)
+##' 
+##' @return a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/sim_gravity_duration.R
+##'
+##' @family simulation
+##' 
+##' @export
+##' 
+
+
+
+sim.gravity.duration <- function(
+     N,
+     D,
+     theta=1,
+     omega.1=1,
+     omega.2=1,
+     gamma=1,
+     lambda,    # matrix of decay rate parameters
+     alpha=1,
+     counts=FALSE
+) {
+     
+     if (!(identical(length(N), dim(D)[1], dim(D)[2], dim(lambda)[1], dim(lambda)[2]))) stop('Check dimensions of input data (N, D, or lambda)')
+     if (!(length(c(theta, omega.1, omega.2, gamma)) == 4)) stop('theta, omega, and zeta parameters must be scalars')
+     
+     message('Initializing simulation matrices')
+     
+     n.districts <- length(N)
+     D.scl <- (D - mean(D, na.rm=T)) / sd(D, na.rm=T)     # scaled distance matrix
+     
+     diag(lambda) <- 0
+     lambda.scl <- scale(lambda)                                   # Estimated mean of relative decay parameter scaled and centered
+     lambda.scl.unique <- sort(unique(as.vector(lambda.scl)))
+     lambda.scl.unique <- seq(min(lambda.scl.unique), max(lambda.scl.unique), length.out=100) # A set of unique lambda values for integral approximation
+     
+     if (length(alpha) == 1) alpha <- rep(alpha, n.districts)
+     
+     x <- f.d <- f.d.lambda <- matrix(NA, n.districts, n.districts)
+     
+     message('Simulating gravity model with duration')
+     for (i in 1:n.districts) {
+          
+          message(paste('Origin:', i, sep=' '))
+          
+          for (j in 1:n.districts) {
+               
+               # Gravity model
+               if (i == j) {
+                    
+                    x[i,j] <- 0
+                    
+               } else {
+                    
+                    
+                    f.d[i,j] <- (D[i,j]^gamma) + 1e-6
+                    
+                    # Conditional dispersal kernel
+                    f.d.lambda[i,j] <- ( f.d[i,j] * (1 - sum(lambda[,] <= lambda[i,j])/(n.districts^2))^alpha[i]) + 1e-6
+                    
+                    x[i,j] <- exp(log(theta) + (omega.1*log(N[i]) + omega.2*log(N[j]) - log(f.d.lambda[i,j])))
+               }          
+          }
+          
+          x[i,] <- (x[i,]/sum(x[i,]))
+          if (counts == TRUE) x[i,] <- round(x[i,]*N[i])
+     }
+     
+     dimnames(x) <- list(origin=dimnames(D)[[1]], destination=dimnames(D)[[2]])
+     return(x)
+}
+
