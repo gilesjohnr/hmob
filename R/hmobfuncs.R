@@ -1115,23 +1115,22 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
 
 ##' Get parameters for Beta distribution
 ##'
-##' This function to calculates the two shape parameters for the Beta distribution 
-##' using EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} of a random variable between 0 and 1. 
-##' When the mean and variance are given, the solution is found analytically. When the proportions 
+##' This function to calculates the two shape parameters for the Beta distribution of a random variable between 0 and 1
+##' Note that the funcrion expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
+##' and \code{probs} as arguments. The arguments are structured this way because when the mean and variance are given, the solution is found analytically. When proportions 
 ##' (or probabilities) at each quantile are given, the solution is found numerically using the Nelder-Mead 
-##' optimiation algorithm. Note that the function expects only \code{mu} and \code{sigma} OR \code{quantiles} 
-##' and \code{probs} as arguments.
+##' optimization algorithm. Note that the fitting algorithm performs best when the five standards quantiles are supplied (Min, 25th, Median, 75th, Max).
 ##' 
 ##' @param mu scalar giving the mean \eqn{\mu}
 ##' @param sigma scalar giving the variance \eqn{\sigma^2} 
-##' @param quantiles vector of quantiles for which proportions are observed
+##' @param quantiles vector of quantiles for which proportions are observed. Expects: c('min', '25th', 'median', '75th', 'max').
 ##' @param probs vector of observed proportions
 ##' 
 ##' @return A list containing the two shape parameters of the Beta distribution
 ##' 
 ##' @author John Giles
 ##' 
-##' @example R/examples/calc_prop_remain.R
+##' @example R/examples/get_beta_params.R
 ##'
 ##' @family simulation
 ##' 
@@ -1144,12 +1143,8 @@ get.beta.params <- function(mu=NULL,
                             probs=NULL
 ) {
      
-     if (all(!is.null(mu), !is.null(sigma), !is.null(quantiles), !is.null(probs))) {
-          
-          stop('Supply mu and sigma for analytic solution OR quantiles and probs for numeric solution')
-     }
      
-     if (all(!is.null(mu), !is.null(sigma))) {
+     if (all(!is.null(mu), !is.null(sigma), is.null(quantiles), is.null(probs))) {
           
           message('Calculating shape and rate parameters analytically from mean (mu) and variance (sigma)')
           
@@ -1176,6 +1171,10 @@ get.beta.params <- function(mu=NULL,
           )
           
           return(list(shape1=params[1], shape2=params[2]))
+          
+     } else {
+          
+          stop('Supply mu and sigma for analytic solution OR quantiles and probs for numeric solution')
      }
 }
 

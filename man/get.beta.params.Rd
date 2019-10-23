@@ -12,7 +12,7 @@ get.beta.params(mu = NULL, sigma = NULL, quantiles = NULL,
 
 \item{sigma}{scalar giving the variance \eqn{\sigma^2}}
 
-\item{quantiles}{vector of quantiles for which proportions are observed}
+\item{quantiles}{vector of quantiles for which proportions are observed. Expects: c('min', '25th', 'median', '75th', 'max').}
 
 \item{probs}{vector of observed proportions}
 }
@@ -20,28 +20,42 @@ get.beta.params(mu = NULL, sigma = NULL, quantiles = NULL,
 A list containing the two shape parameters of the Beta distribution
 }
 \description{
-This function to calculates the two shape parameters for the Beta distribution 
-using EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} of a random variable between 0 and 1. 
-When the mean and variance are given, the solution is found analytically. When the proportions 
+This function to calculates the two shape parameters for the Beta distribution of a random variable between 0 and 1
+Note that the funcrion expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
+and \code{probs} as arguments. The arguments are structured this way because when the mean and variance are given, the solution is found analytically. When proportions 
 (or probabilities) at each quantile are given, the solution is found numerically using the Nelder-Mead 
-optimiation algorithm. Note that the function expects only \code{mu} and \code{sigma} OR \code{quantiles} 
-and \code{probs} as arguments.
+optimization algorithm. Note that the fitting algorithm performs best when the five standards quantiles are supplied (Min, 25th, Median, 75th, Max).
 }
 \examples{
+# analytic solution
+mu <- 0.6
+sigma <- 0.005
+prm <- get.beta.params(mu=mu, sigma=sigma) 
+curve(dbeta(x, prm$shape1, prm$shape2), 0, 1, lwd=2, xlab="Random variable", ylab='Probability density')
+abline(v=mu, col='blue')
+abline(v=c(mu-sqrt(sigma), mu+sqrt(sigma)), col='blue', lty=2)
 
-# Duration data for the purpose of subsetting districts
-load('./data/duration_data_arrays_1day_full.Rdata') 
 
-# Proportion travellers remaining for full epidemic generation based on subsample of 10, where the generation time is 14 days (measles)
-p1 <- calc.prop.remain(d=y.route, gen.t=14, sub.samp=10)
-p2 <- calc.prop.remain(d=y.month, gen.t=14, sub.samp=10)
+# numeric solution
+quantiles <- c(0.001, 0.25, 0.5, 0.75, 0.999)
+probs1 <- c(0.26, 0.57, 0.73, 0.81, 0.95) # WHO region AFR, <12mos, n=16
+probs2 <- c(0.86, 0.86, 0.88, 0.92, 0.94) # WHO region AFR, >12mos, n=4
 
-# Get destination-level mean and variance
-p1.mean <- apply(p1, 2, mean, na.rm=TRUE)
-p1.var <- apply(p1, 2, var, na.rm=TRUE)
+v <- rbind(probs1, probs2)
+dimnames(v) <- list(Age=c('< 12mos', '> 12mos'), 
+                    Quantiles=c('min', '25th', 'median', '75th', 'max'))
 
-p2.mean <- apply(p2, 2, mean, na.rm=TRUE)
-p2.var <- apply(p2, 2, var, na.rm=TRUE)
+par(mfrow=c(1,2))
+prm <- get.beta.params(quantiles=quantiles, probs=probs1)
+curve(dbeta(x, prm$shape1, prm$shape2), 0, 1, lwd=2, xlab="Vaccine effectiveness", ylab='Probability density')
+abline(v=probs1, col='blue', lty=2)
+mtext(c('min', '25th', 'median', '75th', 'max'), 3, at=probs1, line=0.5, col='blue', cex=0.75)
+mtext('<12mos', 3, at=0.05, line=-1.5)
+
+prm <- get.beta.params(quantiles=quantiles, probs=probs2)
+curve(dbeta(x, prm$shape1, prm$shape2), 0, 1, lwd=2, xlab="Vaccine effectiveness", ylab='Probability density')
+abline(v=probs2, col='blue', lty=2)
+mtext('>12mos', 3, at=0.05, line=-1.5)
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
