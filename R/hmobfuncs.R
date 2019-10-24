@@ -301,7 +301,7 @@ get.holidays <- function(d,       # expects longform trip data
 ##'
 ##' @example R/examples/trip_map.R
 ##' 
-##' @family spatial
+##' @family utility
 ##' 
 ##' @export
 ##' 
@@ -368,7 +368,7 @@ trip.map <- function(a, # origin district (can take integer ID or character name
 ##'
 ##' @example R/examples/get_names.R
 ##' 
-##' @family spatial
+##' @family utility
 ##' 
 ##' @export
 ##' 
@@ -399,6 +399,8 @@ get.names <- function(a, # integer ID of origin
 ##' @author John Giles
 ##'
 ##' @example R/examples/see.R
+##' 
+##' @family utility
 ##' 
 ##' @export
 ##' 
@@ -1115,11 +1117,11 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
 
 ##' Get parameters for Beta distribution
 ##'
-##' This function to calculates the two shape parameters for the Beta distribution of a random variable between 0 and 1
-##' Note that the funcrion expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
+##' This function finds the two shape parameters for the Beta distribution of a random variable between 0 and 1.
+##' Note that the function expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
 ##' and \code{probs} as arguments. The arguments are structured this way because when the mean and variance are given, the solution is found analytically. When proportions 
-##' (or probabilities) at each quantile are given, the solution is found numerically using the Nelder-Mead 
-##' optimization algorithm. Note that the fitting algorithm performs best when the five standards quantiles are supplied (Min, 25th, Median, 75th, Max).
+##' (or probabilities) at each quantile are given, the solution is found numerically by minimizing the Sum of the Squared Errors (SSE) using the Nelder-Mead 
+##' optimization algorithm. Note that the fitting algorithm performs best when the five standard quantiles are supplied (Min, 25th, Median, 75th, Max).
 ##' 
 ##' @param mu scalar giving the mean \eqn{\mu}
 ##' @param sigma scalar giving the variance \eqn{\sigma^2} 
@@ -1163,7 +1165,7 @@ get.beta.params <- function(mu=NULL,
           }
           
           suppressWarnings(
-               params <- optim(par=c(1,1), # flat beta distribution to start
+               params <- optim(par=c(1,1), # initialize with flat beta distribution
                                fn=fit.beta,
                                quantiles=quantiles, 
                                probs=probs,
@@ -1884,7 +1886,7 @@ sim.TSIR.full <- function(
 ##' Calculate aggregate waiting time distribution
 ##'
 ##' This function aggregates the all simulated waiting time distributions into a single probability density for each district. 
-##' The method uses a simple linear combination of waiting time probabilities, sometimes referred to as the 'linear opinion pool'.
+##' The method uses simple linear pooling to get the weighted linear average of all waiting time probabilities (sometimes referred to as the 'linear opinion pool').
 ##' 
 ##' @param x a three-dimensional array containing waiting time distributions for all districts and simulations
 ##' 
@@ -2082,7 +2084,7 @@ calc.timing.magnitude <- function(
 ##' 
 ##' @example R/examples/load_object.R
 ##'
-##' @family simulation
+##' @family utility
 ##' 
 ##' @export
 ##' 
@@ -2102,6 +2104,8 @@ load.obj <- function(x=1, file) {
 ##' @return ggplot object
 ##' 
 ##' @author John Giles
+##' 
+##' @family utility
 ##' 
 ##' @export
 ##' 

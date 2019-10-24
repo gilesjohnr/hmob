@@ -27,6 +27,12 @@ see(tmp, 2, 3)
 
 
 }
+\seealso{
+Other utility: \code{\link{get.legend}},
+  \code{\link{get.names}}, \code{\link{load.obj}},
+  \code{\link{trip.map}}
+}
 \author{
 John Giles
 }
+\concept{utility}

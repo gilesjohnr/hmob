@@ -14,7 +14,7 @@ a matrix (rows = districts, cols = epidemic generation)
 }
 \description{
 This function aggregates the all simulated waiting time distributions into a single probability density for each district. 
-The method uses a simple linear combination of waiting time probabilities, sometimes referred to as the 'linear opinion pool'.
+The method uses simple linear pooling to get the weighted linear average of all waiting time probabilities (sometimes referred to as the 'linear opinion pool').
 }
 \examples{
 load("./output/TSIR_sim_flu_high.Rdata")
@@ -34,8 +34,8 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.prop.remain}},
   \code{\link{calc.timing.magnitude}},
   \code{\link{decay.func}}, \code{\link{get.beta.params}},
-  \code{\link{load.obj}}, \code{\link{sim.TSIR.full}},
-  \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
+  \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
+  \code{\link{sim.combine.dual}},
   \code{\link{sim.combine}},
   \code{\link{sim.gravity.duration}},
   \code{\link{sim.gravity}}, \code{\link{sim.lambda}},

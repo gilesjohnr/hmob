@@ -24,21 +24,11 @@ sim <- load.obj("./output/TSIR_sim_influenza_high.Rdata")
 y.route <- load.obj(3, './data/duration_data_arrays_1day_full.Rdata')  # y.route only
 }
 \seealso{
-Other simulation: \code{\link{calc.hpd}},
-  \code{\link{calc.prop.inf}},
-  \code{\link{calc.prop.remain}},
-  \code{\link{calc.timing.magnitude}},
-  \code{\link{calc.wait.time}}, \code{\link{decay.func}},
-  \code{\link{get.beta.params}},
-  \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
-  \code{\link{sim.combine.dual}},
-  \code{\link{sim.combine}},
-  \code{\link{sim.gravity.duration}},
-  \code{\link{sim.gravity}}, \code{\link{sim.lambda}},
-  \code{\link{sim.pi}}, \code{\link{sim.rho}},
-  \code{\link{sim.tau}}
+Other utility: \code{\link{get.legend}},
+  \code{\link{get.names}}, \code{\link{see}},
+  \code{\link{trip.map}}
 }
 \author{
 John Giles
 }
-\concept{simulation}
+\concept{utility}

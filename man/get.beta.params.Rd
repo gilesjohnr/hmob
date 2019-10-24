@@ -20,11 +20,11 @@ get.beta.params(mu = NULL, sigma = NULL, quantiles = NULL,
 A list containing the two shape parameters of the Beta distribution
 }
 \description{
-This function to calculates the two shape parameters for the Beta distribution of a random variable between 0 and 1
-Note that the funcrion expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
+This function finds the two shape parameters for the Beta distribution of a random variable between 0 and 1.
+Note that the function expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
 and \code{probs} as arguments. The arguments are structured this way because when the mean and variance are given, the solution is found analytically. When proportions 
-(or probabilities) at each quantile are given, the solution is found numerically using the Nelder-Mead 
-optimization algorithm. Note that the fitting algorithm performs best when the five standards quantiles are supplied (Min, 25th, Median, 75th, Max).
+(or probabilities) at each quantile are given, the solution is found numerically by minimizing the Sum of the Squared Errors (SSE) using the Nelder-Mead 
+optimization algorithm. Note that the fitting algorithm performs best when the five standard quantiles are supplied (Min, 25th, Median, 75th, Max).
 }
 \examples{
 # analytic solution
@@ -63,8 +63,8 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.prop.remain}},
   \code{\link{calc.timing.magnitude}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
-  \code{\link{load.obj}}, \code{\link{sim.TSIR.full}},
-  \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
+  \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
+  \code{\link{sim.combine.dual}},
   \code{\link{sim.combine}},
   \code{\link{sim.gravity.duration}},
   \code{\link{sim.gravity}}, \code{\link{sim.lambda}},

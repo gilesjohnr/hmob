@@ -15,6 +15,12 @@ ggplot object
 \description{
 This function returns the legend of a ggplot object.
 }
+\seealso{
+Other utility: \code{\link{get.names}},
+  \code{\link{load.obj}}, \code{\link{see}},
+  \code{\link{trip.map}}
+}
 \author{
 John Giles
 }
+\concept{utility}
