@@ -995,6 +995,75 @@ get.param.vals <- function(
 }
 
 
+
+##' Get route-type
+##' 
+##' This function determines if a route is one of four types based on population density. The four route-types are:
+##' \enumerate{
+##'   \item High density to high density (High:high)
+##'   \item High density to low density (High:low)
+##'   \item Low density to low density (Low:low)
+##'   \item Low density to high density (Low:high)
+##' }
+##' 
+##' @param x A dataframe containing a column for the origin and a column for the destination
+##' @param orig column index of origin district
+##' @param dest column index of destination district
+##' @param hi vector of district IDs in the high density category
+##' @param lo vector of district IDs in the low density category
+##' 
+##' @return A character vector giving the corresponding route type
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_route_type.R
+##'
+##' @family utilities
+##' 
+##' @export
+##' 
+
+get.route.type <- function(x, # dataframe
+                           orig,    # column index of origin district
+                           dest,    # column index of destination district
+                           hi,      # vector of district IDs in the high density category
+                           lo       # vector of district IDs in the low density category
+) {
+     if (!is.data.frame(x)) stop('x must be a dataframe')
+     
+     hi <- as.character(hi)
+     lo <- as.character(lo)
+     x[,orig] <- as.character(x[,orig])
+     x[,dest] <- as.character(x[,dest])
+     
+     type <- rep(NA, nrow(x))
+     
+     for (i in 1:nrow(x)) {
+          
+          if (x[i,orig] %in% hi & x[i,dest] %in% hi) {
+               
+               tmp <- "High:high"
+               
+          } else if (x[i,orig] %in% hi & x[i,dest] %in% lo) {
+               
+               tmp <- "High:low"
+               
+          } else if (x[i,orig] %in% lo & x[i,dest] %in% lo) {
+               
+               tmp <- "Low:low"
+               
+          }  else if (x[i,orig] %in% lo & x[i,dest] %in% hi) {
+               
+               tmp <- "Low:High"
+          }
+          type[i] <- tmp
+     }
+     
+     return(type)
+}
+
+
+
 ##' Proportion of individuals remaining for full epidemic generation
 ##'
 ##' This function calculates the proportion of individuals that remain in a location for
@@ -1118,15 +1187,19 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
 ##' Get parameters for Beta distribution
 ##'
 ##' This function finds the two shape parameters for the Beta distribution of a random variable between 0 and 1.
-##' Note that the function expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
-##' and \code{probs} as arguments. The arguments are structured this way because when the mean and variance are given, the solution is found analytically. When proportions 
-##' (or probabilities) at each quantile are given, the solution is found numerically by minimizing the Sum of the Squared Errors (SSE) using the Nelder-Mead 
-##' optimization algorithm. Note that the fitting algorithm performs best when the five standard quantiles are supplied (Min, 25th, Median, 75th, Max).
+##' Note that the function uses a different method depending on the arguments supplied. The three methods are:
+##' \enumerate{
+##' \item When the mean (\code{mu}) and variance (\code{sigma}) are supplied, the solution is found analytically.
+##' \item When observed probabilities (\code{probs}) at each quantile (\code{quantiles}) are given, the 
+##' solution is found by minimizing the Sum of the Squared Errors (SSE) using the Nelder-Mead optimization 
+##' algorithm. Note that the fitting algorithm performs best when the five standard quantiles are supplied (Min, 25th, Median, 75th, Max).
+##' \item When only observed probabilities (\code{probs}) are supplied, the function uses Maximum Likelihood Estimation (MLE).
+##' }
 ##' 
 ##' @param mu scalar giving the mean \eqn{\mu}
 ##' @param sigma scalar giving the variance \eqn{\sigma^2} 
 ##' @param quantiles vector of quantiles for which proportions are observed. Expects: c('min', '25th', 'median', '75th', 'max').
-##' @param probs vector of observed proportions
+##' @param probs vector of observed probabilities or proportions
 ##' 
 ##' @return A list containing the two shape parameters of the Beta distribution
 ##' 
@@ -1135,27 +1208,34 @@ calc.prop.remain <- function(d,                # 4D duration data array produced
 ##' @example R/examples/get_beta_params.R
 ##'
 ##' @family simulation
+##' @family susceptibility
 ##' 
 ##' @export
 ##' 
 
-get.beta.params <- function(mu=NULL, 
-                            sigma=NULL,
-                            quantiles=NULL,
-                            probs=NULL
+
+get.beta.params <- function(
+     mu=NULL, 
+     sigma=NULL,
+     quantiles=NULL,
+     probs=NULL
 ) {
-     
      
      if (all(!is.null(mu), !is.null(sigma), is.null(quantiles), is.null(probs))) {
           
-          message('Calculating shape and rate parameters analytically from mean (mu) and variance (sigma)')
+          message('Calculating Beta distribution parameters analytically from mean (mu) and variance (sigma)')
           
           shape1 <- ((1-mu) / sigma - 1/mu) * mu^2
+          
           return(list(shape1=shape1, shape2=shape1 * (1 / mu-1)))
           
      } else if (all(is.null(mu), is.null(sigma), !is.null(quantiles), !is.null(probs))) {
           
-          message('Calculating shape and rate parameters numerically from quantiles')
+          if(!(identical(length(quantiles), length(probs)))) {
+               stop("Dimensions of 'quant' and 'probs' arguments must match.")
+          }
+          
+          message('Calculating Beta distribution parameters from quantiles using sums of squares')
           
           fit.beta <- function(x,           # vector of shape and rate parameters for beta distribution
                                quantiles,   # the quantiles for which proportions are observed
@@ -1169,15 +1249,148 @@ get.beta.params <- function(mu=NULL,
                                fn=fit.beta,
                                quantiles=quantiles, 
                                probs=probs,
-                               method='Nelder-Mead')$par
+                               method='Nelder-Mead',
+                               control=list(maxit=1e5))$par
           )
           
           return(list(shape1=params[1], shape2=params[2]))
           
+     } else if (all(is.null(mu), is.null(sigma), is.null(quantiles), !is.null(probs))) {
+          
+          message('Calculating Beta distribution parameters from probabilities using maximum likelihood')
+          message(paste('n =', length(probs), sep=' '))
+          
+          suppressWarnings(
+               params <- MASS::fitdistr(probs, 'beta', list(shape1=2, shape2=2), control=list(maxit=1e5))
+          )
+          
+          return(list(shape1=as.numeric(params$estimate[1]), 
+                      shape2=as.numeric(params$estimate[2])))
+          
      } else {
           
-          stop('Supply mu and sigma for analytic solution OR quantiles and probs for numeric solution')
+          stop('Arguments must be only: mu & sigma | quantiles & probs | probs only')
      }
+}
+
+
+##' Get Beta parameters for age groups
+##'
+##' This function finds the two shape parameters for the Beta distribution for aggregated age groups given individual-level 
+##' vaccination data. The individual-level data is comprised of the age of the individual (\code{age}) and a binary indicator of vaccination status 
+##' (\code{vacc}). The function first uses a Binomial GAM to estimate the mean (mu) and variance (sigma) of the proportion vaccinated for each 
+##' of the defined age groups and then finds the shape parameters of the Beta distribution analytically using \code{\link{get.beta.prams}}.
+##' 
+##' Note that a Binomial GLM is used if the number of age groups is 2 or less.
+##' 
+##' @param age a vector giving the age at vaccination of each individual
+##' @param vacc a binary vector indicating the vaccination status of each individual
+##' @param breaks a scalar or vector of age group breaks (passed to \code{\link{.bincode}}). If NULL (default), calculates Beta parameters for all data together.
+##' 
+##' @return A dataframe containing the sample size, mu, sigma, and Beta distribution paramters for each age group
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_age_beta.R
+##'
+##' @family simulation
+##' @family susceptibility
+##' 
+##' @export
+##' 
+
+
+get.age.beta <- function(
+     age=NULL,     # age of individual
+     vacc=NULL,    # binary indicator of vaccination status
+     breaks=NULL   # if beta params are to be calculated for age groups, give vector of breaks (see .bincode: a numeric vector of two or more cut points, sorted in increasing order)
+) {
+     
+     tmp <- cbind(age, vacc) 
+     tmp <- tmp[complete.cases(tmp),]
+     message(paste('Complete observations: n =', nrow(tmp), 'of', length(age), sep=' '))
+     age <- tmp[,1]; vacc <- tmp[,2]
+     
+     if (is.null(breaks)) breaks <- c(0, ceiling(max(age)))
+     if (breaks[1] != 0) breaks <- c(0, breaks)
+     if (max(breaks) < max(age)) breaks <- c(breaks, ceiling(max(age)))
+     breaks <- sort(breaks)
+     
+     age.group <- .bincode(age, breaks, right=FALSE)
+     age.label <- factor(age.group, labels=stringr::str_c(breaks[-length(breaks)], "-", breaks[-1]))
+     
+     message(paste('Estimating mean (mu) and variance (sigma) for', nlevels(age.label), 'age groups', sep=' '))
+     fit <- tryCatch({
+          
+          suppressWarnings(
+               mgcv::gam(vacc ~ s(age.group, bs='tp', k=nlevels(age.label)-1), family='binomial')
+          )
+          
+     }, error = function (e) {
+          
+          glm(vacc ~ age.group, family='binomial')
+     } 
+     )
+     
+     suppressWarnings(
+          pred <- predict(fit, newdata=data.frame(age.group=sort(unique(age.group))), type='response', se.fit=TRUE)
+     )
+     
+     params <- get.beta.params(mu=pred$fit, sigma=pred$se.fit)
+     
+     return(
+          data.frame(age=levels(age.label),
+                     n=as.vector(table(age.group)),
+                     mu=pred$fit,
+                     sigma=pred$se.fit,
+                     shape1=params$shape1,
+                     shape2=params$shape2,
+                     row.names=NULL)
+     )
+}
+
+
+
+##' Calculate the proportion of population immune
+##'
+##' This function calculates the proportion immune using conditional probabilities. The method 
+##' assumes that vaccination events are dependent, where individuals that have recieved the first
+##' dose recieve the second dose before those that have missed the first dose.
+##' 
+##' @param v1 a scalar giving the proportion population vaccinated with first dose
+##' @param v2 a scalar giving the proportion population vaccinated with second dose
+##' 
+##' @return A dataframe containing the relative proportions of the population that have recieved 0, 1, or 2 doses
+##' @author John Giles
+##' 
+##' @example R/examples/calc_prop_imm.R
+##'
+##' @family susceptibility
+##' 
+##' @export
+##' 
+
+calc.prop.imm <- function(
+     v1, # Proportion vaccinated with first dose
+     v2  # proportion vaccinated with second dose
+){
+     
+     dropout <- (v1 - v2)/v1
+     if (v2 > v1) dropout <- 0 
+     
+     a <- v1*(1-dropout)          # Pr( v2 | v1 )
+     b <- v1*dropout              # Pr( notv2 | v1 )
+     c <- (1-v1)*(v2-v1)          # Pr( v2 | notv1 )
+     if (v2 <= v1) c <- 0
+     d <- (1-v1)*(1-(v2-v1))      # Pr( notv2 | notv1 )
+     if (v2 > v1) d <- 1
+     
+     data.frame(
+          doses=2:0,
+          prop=c(a/sum(a,b,c,d),
+                 (b+c)/sum(a,b,c,d),
+                 d/sum(a,b,c,d))
+     )
 }
 
 
@@ -2391,9 +2604,7 @@ calc.prop.tot.trips <- function(
 ##' This function uses the gravity model formula to simulate a connectivity matrix based on the supplied model parameters. The 
 ##' gravity model formula uses a Gamma distribution as the dispersal kernel in the denominator. A null model (where all model parameters = 1) can be
 ##' simulated by supplying only population sizes (\code{N}) and pairwise distances (\code{D}).
-##' \deqn{
-##'     \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
-##' }
+##' \deqn{\theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )}
 ##' 
 ##' @param N vector of population sizes
 ##' @param D matrix of distances among all \eqn{ij} pairs

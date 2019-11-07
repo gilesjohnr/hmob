@@ -14,20 +14,24 @@ get.beta.params(mu = NULL, sigma = NULL, quantiles = NULL,
 
 \item{quantiles}{vector of quantiles for which proportions are observed. Expects: c('min', '25th', 'median', '75th', 'max').}
 
-\item{probs}{vector of observed proportions}
+\item{probs}{vector of observed probabilities or proportions}
 }
 \value{
 A list containing the two shape parameters of the Beta distribution
 }
 \description{
 This function finds the two shape parameters for the Beta distribution of a random variable between 0 and 1.
-Note that the function expects EITHER the mean \eqn{\mu} and variance \eqn{\sigma^2} OR \code{quantiles} 
-and \code{probs} as arguments. The arguments are structured this way because when the mean and variance are given, the solution is found analytically. When proportions 
-(or probabilities) at each quantile are given, the solution is found numerically by minimizing the Sum of the Squared Errors (SSE) using the Nelder-Mead 
-optimization algorithm. Note that the fitting algorithm performs best when the five standard quantiles are supplied (Min, 25th, Median, 75th, Max).
+Note that the function uses a different method depending on the arguments supplied. The three methods are:
+\enumerate{
+\item When the mean (\code{mu}) and variance (\code{sigma}) are supplied, the solution is found analytically.
+\item When observed probabilities (\code{probs}) at each quantile (\code{quantiles}) are given, the 
+solution is found by minimizing the Sum of the Squared Errors (SSE) using the Nelder-Mead optimization 
+algorithm. Note that the fitting algorithm performs best when the five standard quantiles are supplied (Min, 25th, Median, 75th, Max).
+\item When only observed probabilities (\code{probs}) are supplied, the function uses Maximum Likelihood Estimation (MLE).
+}
 }
 \examples{
-# analytic solution
+### Analytic solution
 mu <- 0.6
 sigma <- 0.005
 prm <- get.beta.params(mu=mu, sigma=sigma) 
@@ -36,7 +40,7 @@ abline(v=mu, col='blue')
 abline(v=c(mu-sqrt(sigma), mu+sqrt(sigma)), col='blue', lty=2)
 
 
-# numeric solution
+### Numeric solution using SSE
 quantiles <- c(0.001, 0.25, 0.5, 0.75, 0.999)
 probs1 <- c(0.26, 0.57, 0.73, 0.81, 0.95) # WHO region AFR, <12mos, n=16
 probs2 <- c(0.86, 0.86, 0.88, 0.92, 0.94) # WHO region AFR, >12mos, n=4
@@ -56,6 +60,24 @@ prm <- get.beta.params(quantiles=quantiles, probs=probs2)
 curve(dbeta(x, prm$shape1, prm$shape2), 0, 1, lwd=2, xlab="Vaccine effectiveness", ylab='Probability density')
 abline(v=probs2, col='blue', lty=2)
 mtext('>12mos', 3, at=0.05, line=-1.5)
+
+
+### Maximum Likelihood Estimation
+get.beta.params(probs=rbeta(100, 1.5, 2))
+
+# Measles vaccination coverage in Namibia
+# WHO-UNICEF estiamtes from: http://apps.who.int/immunization_monitoring/globalsummary/estimates?c=NAM
+
+mcv1 <- c(82, 80, 75, 85, 83, 82, 76, 74, 75, 76, 73, 69, 63, 73, 70, 70, 68, 58, 69, 65, 64, 59, 68)/100  	
+mcv2 <- c(50, 32)/100
+
+prm <- get.beta.params(probs=mcv1)
+curve(dbeta(x, prm$shape1, prm$shape2), 0, 1)
+abline(v=mcv1, lty=2, col='blue')
+
+prm <- get.beta.params(probs=mcv2)
+curve(dbeta(x, prm$shape1, prm$shape2), 0, 1)
+abline(v=mcv2, lty=2, col='blue')
 }
 \seealso{
 Other simulation: \code{\link{calc.hpd}},
@@ -63,15 +85,19 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.prop.remain}},
   \code{\link{calc.timing.magnitude}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
-  \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
-  \code{\link{sim.combine.dual}},
+  \code{\link{get.age.beta}}, \code{\link{sim.TSIR.full}},
+  \code{\link{sim.TSIR}}, \code{\link{sim.combine.dual}},
   \code{\link{sim.combine}},
   \code{\link{sim.gravity.duration}},
   \code{\link{sim.gravity}}, \code{\link{sim.lambda}},
   \code{\link{sim.pi}}, \code{\link{sim.rho}},
   \code{\link{sim.tau}}
+
+Other susceptibility: \code{\link{calc.prop.imm}},
+  \code{\link{get.age.beta}}
 }
 \author{
 John Giles
 }
 \concept{simulation}
+\concept{susceptibility}

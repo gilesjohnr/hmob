@@ -27,9 +27,7 @@ a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive inte
 This function uses the gravity model formula to simulate a connectivity matrix based on the supplied model parameters. The 
 gravity model formula uses a Gamma distribution as the dispersal kernel in the denominator. A null model (where all model parameters = 1) can be
 simulated by supplying only population sizes (\code{N}) and pairwise distances (\code{D}).
-\deqn{
-    \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
-}
+\deqn{\theta  ( N_i^{\omega_1} N_j^{\omega_2} / f(d_{ij}) )}{ theta*( N_i^\omega_1 N_j^\omega_2 / f(d_ij) }
 }
 \examples{
 B <- load.obj(2, './output/gravity_model_basic_route_full4.Rdata')
@@ -62,6 +60,7 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{calc.prop.remain}},
   \code{\link{calc.timing.magnitude}},
   \code{\link{calc.wait.time}}, \code{\link{decay.func}},
+  \code{\link{get.age.beta}},
   \code{\link{get.beta.params}},
   \code{\link{sim.TSIR.full}}, \code{\link{sim.TSIR}},
   \code{\link{sim.combine.dual}},

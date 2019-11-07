@@ -4,7 +4,7 @@ Title: Tools for analyzing human mobility data
 Version: 1.5
 Date: 2019-01-22
 Author: John R Giles
-Maintainer: John R Giles <gilesjohnr@gmail.com>
+Maintainer: John R Giles <giles@jhu.edu>
 Description: Functions for handling data, models, and simulations of human mobility patterns.
 License: GPL (>=2)
 RoxygenNote: 6.1.1
