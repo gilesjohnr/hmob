@@ -7,7 +7,7 @@
 get.age.beta(age = NULL, vacc = NULL, breaks = NULL)
 }
 \arguments{
-\item{age}{a vector giving the age of each individual}
+\item{age}{a vector giving the age at vaccination of each individual}
 
 \item{vacc}{a binary vector indicating the vaccination status of each individual}
 
@@ -20,7 +20,7 @@ A dataframe containing the sample size, mu, sigma, and Beta distribution paramte
 This function finds the two shape parameters for the Beta distribution for aggregated age groups given individual-level 
 vaccination data. The individual-level data is comprised of the age of the individual (\code{age}) and a binary indicator of vaccination status 
 (\code{vacc}). The function first uses a Binomial GAM to estimate the mean (mu) and variance (sigma) of the proportion vaccinated for each 
-age group and then finds the shape parameters of the Beta distribution analytically using \code{\link{get.beta.prams}}.
+of the defined age groups and then finds the shape parameters of the Beta distribution analytically using \code{\link{get.beta.prams}}.
 }
 \details{
 Note that a Binomial GLM is used if the number of age groups is 2 or less.
