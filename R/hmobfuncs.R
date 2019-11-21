@@ -1279,7 +1279,7 @@ get.beta.params <- function(
 ##' This function finds the two shape parameters for the Beta distribution for aggregated age groups given individual-level 
 ##' vaccination data. The individual-level data is comprised of the age of the individual (\code{age}) and a binary indicator of vaccination status 
 ##' (\code{vacc}). The function first uses a Binomial GAM to estimate the mean (mu) and variance (sigma) of the proportion vaccinated for each 
-##' of the defined age groups and then finds the shape parameters of the Beta distribution analytically using \code{\link{get.beta.prams}}.
+##' of the defined age groups and then finds the shape parameters of the Beta distribution analytically using \code{\link{get.beta.params}}.
 ##' 
 ##' Note that a Binomial GLM is used if the number of age groups is 2 or less.
 ##' 
@@ -1351,46 +1351,150 @@ get.age.beta <- function(
 
 
 
-##' Calculate the proportion of population immune
+##' Calculate vaccination coverage given multiple doses of vaccine
 ##'
 ##' This function calculates the proportion immune using conditional probabilities. The method 
 ##' assumes that vaccination events are dependent, where individuals that have recieved the first
-##' dose recieve the second dose before those that have missed the first dose.
+##' dose are the most likely to recieve the second dose and those that have received both the first 
+##' and second doses are the most likely to receive the third.
+##' 
+##' When only \code{v1} and \code{v2} are supplied, the function uses the simpler two dose method.
 ##' 
 ##' @param v1 a scalar giving the proportion population vaccinated with first dose
 ##' @param v2 a scalar giving the proportion population vaccinated with second dose
+##' @param v3 a scalar giving the proportion population vaccinated with third dose (default = NULL)
 ##' 
-##' @return A dataframe containing the relative proportions of the population that have recieved 0, 1, or 2 doses
+##' @return A dataframe containing the relative proportions of the population that have recieved 0, 1, 2, or 3 doses
 ##' @author John Giles
 ##' 
-##' @example R/examples/calc_prop_imm.R
+##' @example R/examples/calc_prop_vacc.R
 ##'
 ##' @family susceptibility
 ##' 
 ##' @export
 ##' 
 
-calc.prop.imm <- function(
-     v1, # Proportion vaccinated with first dose
-     v2  # proportion vaccinated with second dose
+calc.prop.vacc <- function(
+     v1,  # Proportion vaccinated with first campaign
+     v2,  # proportion vaccinated with second campaign
+     v3=NULL   # proportion vaccinated with third campaign
 ){
      
-     dropout <- (v1 - v2)/v1
-     if (v2 > v1) dropout <- 0 
+     if (!all(v1 >= 0 & v1 <= 1, v2 >= 0 & v2 <= 1)) stop('Arguments must be between 0 and 1')
      
-     a <- v1*(1-dropout)          # Pr( v2 | v1 )
-     b <- v1*dropout              # Pr( notv2 | v1 )
-     c <- (1-v1)*(v2-v1)          # Pr( v2 | notv1 )
-     if (v2 <= v1) c <- 0
-     d <- (1-v1)*(1-(v2-v1))      # Pr( notv2 | notv1 )
-     if (v2 > v1) d <- 1
+     if (is.null(v3)) {
+          
+          if (v2 > v1) {
+               d_12 <- 0           # Dropout rate from 1 to 2
+               s_12 <- v2 - v1     # Surplus of dose 2 not given to ppl who received dose 1
+          } else {
+               d_12 <- (v1 - v2)/v1
+               s_12 <- 0
+          }
+          
+          # Conditional probability terms for two doses
+          p_1_2 <- v1*(1-d_12)          # Pr( v2 | v1 )
+          p_1_n2 <- v1*d_12             # Pr( notv2 | v1 )
+          
+          if (v2 < v1) { # Pr( v2 | not v1 )
+               p_n1_2 <- 0
+          } else {
+               p_n1_2 <- (1-v1)*(v2-v1) 
+          }
+          
+          if (v2 > v1) { # Pr( notv2 | notv1 )
+               p_n1_n2 <- 1
+          } else {
+               p_n1_n2 <- (1-v1)*(1-(v2-v1))      
+          }
+          
+          den <- sum(p_1_2, p_1_n2, p_n1_2, p_n1_n2)
+          out <- data.frame(doses=2:0, prop=c(p_1_2/den, (p_1_n2 + p_n1_2)/den, p_n1_n2/den))
+          
+     } else if (!is.null(v3)) {
+          
+          if(!(v3 >= 0 & v3 <= 1)) stop('Arguments must be between 0 and 1')
+          
+          if (v2 > v1) {
+               d_12 <- 0           # Dropout rate from 1 to 2
+               s_12 <- v2 - v1     # Surplus of dose 2 not given to ppl who received dose 1
+          } else {
+               d_12 <- (v1 - v2)/v1
+               s_12 <- 0
+          }
+          
+          p_1_2 <- v1*(1-d_12)     # Pr( v2 | v1 )
+          
+          if (v3 >= p_1_2) {
+               d_23 <- 0            # Dropout rate from 2 doses to 3 
+               s_23 <- v3 - p_1_2   # Surplus of dose 3 not given to ppl that already received 2 doses
+          } else {
+               d_23 <- (p_1_2 - v3)/p_1_2
+               s_23 <- 0
+          }
+          
+          # Conditional probability terms for three doses
+          
+          p_1_2_3 <- p_1_2*(1-d_23)
+          p_1_2_n3 <- p_1_2*d_23
+          
+          if (v3 <= p_1_2) {
+               p_1_n2_3 <- 0
+          } else {
+               p_1_n2_3 <- v1*d_12*s_23
+          }
+          
+          if (v2 <= v1) {
+               p_n1_2_3 <- 0
+          } else if (v3 <= p_1_2) {
+               p_n1_2_3 <- 0
+          } else {
+               p_n1_2_3 <- (1-v1)*s_12*s_23
+          }
+          
+          if (v3 <= p_1_2) {
+               p_1_n2_n3 <- v1*d_12
+          } else {
+               p_1_n2_n3 <- v1*d_12*(1-s_23)
+          }
+          
+          if (v2 <= v1) {
+               p_n1_2_n3 <- 0
+          } else if (v3 <= p_1_2) {
+               p_n1_2_n3 <- 0
+          } else {
+               p_n1_2_n3 <- (1-v1)*s_12*(1-s_23)
+          }
+          
+          if (v3 <= p_1_2) {
+               p_n1_n2_3 <- 0
+          } else if (v3 > p_1_2 & v2 <= v1) {
+               p_n1_n2_3 <- (1-v1)*(s_23 - v1*d_12 - (1-v1)*(v2-v1)) 
+          } else if (v3 > p_1_2 & v2 > v1) {
+               p_n1_n2_3 <- (1-v1)*s_12*(s_23 - v1*d_12 - (1-v1)*(v2-v1)) 
+          }
+          
+          if (v3 <= p_1_2 & v2 <= v1) {
+               p_n1_n2_n3 <- (1-v1)
+          } else if (v3 <= p_1_2 & v2 > v1) {
+               p_n1_n2_n3 <- (1-v1)*(1-s_12)
+          } else if (v3 > p_1_2 & v2 <= v1) {
+               p_n1_n2_n3 <- (1-v1)*(1-s_23)
+          } else if (v3 > p_1_2 & v2 > v1) {
+               p_n1_n2_n3 <- (1-v1)*(1-s_12)*(1-s_23)
+          }
+          
+          den <- sum(p_1_2_3, p_1_2_n3, p_1_n2_3, p_n1_2_3,
+                     p_1_n2_n3, p_n1_2_n3, p_n1_n2_3, p_n1_n2_n3)
+          
+          out <- data.frame(doses=3:0,
+                            prop=c(p_1_2_3/den,
+                                   sum(p_1_2_n3, p_1_n2_3, p_n1_2_3)/den,
+                                   sum(p_1_n2_n3, p_n1_2_n3, p_n1_n2_3)/den,
+                                   p_n1_n2_n3/den))  
+     }
      
-     data.frame(
-          doses=2:0,
-          prop=c(a/sum(a,b,c,d),
-                 (b+c)/sum(a,b,c,d),
-                 d/sum(a,b,c,d))
-     )
+     return(out)
 }
 
 

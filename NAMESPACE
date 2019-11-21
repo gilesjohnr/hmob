@@ -2,10 +2,10 @@
 
 export(calc.decay.stats)
 export(calc.hpd)
-export(calc.prop.imm)
 export(calc.prop.inf)
 export(calc.prop.remain)
 export(calc.prop.tot.trips)
+export(calc.prop.vacc)
 export(calc.route.type)
 export(calc.samp.size)
 export(calc.timing.magnitude)

@@ -90,7 +90,7 @@ Other simulation: \code{\link{calc.hpd}},
   \code{\link{sim.pi}}, \code{\link{sim.rho}},
   \code{\link{sim.tau}}
 
-Other susceptibility: \code{\link{calc.prop.imm}},
+Other susceptibility: \code{\link{calc.prop.vacc}},
   \code{\link{get.beta.params}}
 }
 \author{
