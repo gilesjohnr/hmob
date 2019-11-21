@@ -1329,8 +1329,7 @@ get.age.beta <- function(
      }, error = function (e) {
           
           glm(vacc ~ age.group, family='binomial')
-     } 
-     )
+     })
      
      suppressWarnings(
           pred <- predict(fit, newdata=data.frame(age.group=sort(unique(age.group))), type='response', se.fit=TRUE)
@@ -1358,7 +1357,7 @@ get.age.beta <- function(
 ##' dose are the most likely to recieve the second dose and those that have received both the first 
 ##' and second doses are the most likely to receive the third.
 ##' 
-##' When only \code{v1} and \code{v2} are supplied, the function uses the simpler two dose method.
+##' When \code{v3 = NULL}, the function uses the simpler two dose method.
 ##' 
 ##' @param v1 a scalar giving the proportion population vaccinated with first dose
 ##' @param v2 a scalar giving the proportion population vaccinated with second dose
