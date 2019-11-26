@@ -19,6 +19,8 @@ sim.gravity(N, D, theta = 1, omega.1 = 1, omega.2 = 1, gamma = 1,
 \item{omega.2}{scalar giving exponential scaling of destination population size (default = 1)}
 
 \item{gamma}{scalar giving the dispersal kernel paramater (default = 1)}
+
+\item{counts}{logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)}
 }
 \value{
 a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})

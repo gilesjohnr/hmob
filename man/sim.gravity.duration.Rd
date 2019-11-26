@@ -23,6 +23,8 @@ sim.gravity.duration(N, D, theta = 1, omega.1 = 1, omega.2 = 1,
 \item{lambda}{matrix of trip duration decay parameters for each \eqn{ij} route}
 
 \item{alpha}{model fitting parameter for the ECDF of lambda (default = 1)}
+
+\item{counts}{logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)}
 }
 \value{
 a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})

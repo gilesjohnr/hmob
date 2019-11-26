@@ -1350,7 +1350,7 @@ get.age.beta <- function(
 
 
 
-##' Calculate vaccination coverage given multiple doses of vaccine
+##' Calculate vaccination coverage given routine vaccination coverage
 ##'
 ##' This function calculates the proportion immune using conditional probabilities. The method 
 ##' assumes that vaccination events are dependent, where individuals that have recieved the first
@@ -1359,11 +1359,12 @@ get.age.beta <- function(
 ##' 
 ##' When \code{v3 = NULL}, the function uses the simpler two dose method.
 ##' 
-##' @param v1 a scalar giving the proportion population vaccinated with first dose
-##' @param v2 a scalar giving the proportion population vaccinated with second dose
-##' @param v3 a scalar giving the proportion population vaccinated with third dose (default = NULL)
+##' @param v1 a scalar giving the proportion vaccinated with first routine immunization
+##' @param v2 a scalar giving the proportion vaccinated with second routine immunization
+##' @param v3 a scalar giving the proportion vaccinated with third routine immunization (default = NULL)
 ##' 
 ##' @return A dataframe containing the relative proportions of the population that have recieved 0, 1, 2, or 3 doses
+##' 
 ##' @author John Giles
 ##' 
 ##' @example R/examples/calc_prop_vacc.R
@@ -1395,14 +1396,14 @@ calc.prop.vacc <- function(
           p_1_2 <- v1*(1-d_12)          # Pr( v2 | v1 )
           p_1_n2 <- v1*d_12             # Pr( notv2 | v1 )
           
-          if (v2 < v1) { # Pr( v2 | not v1 )
+          if (v2 <= v1) { # Pr( v2 | not v1 )
                p_n1_2 <- 0
           } else {
                p_n1_2 <- (1-v1)*(v2-v1) 
           }
           
-          if (v2 > v1) { # Pr( notv2 | notv1 )
-               p_n1_n2 <- 1
+          if (v2 <= v1) { # Pr( notv2 | notv1 )
+               p_n1_n2 <- (1-v1)
           } else {
                p_n1_n2 <- (1-v1)*(1-(v2-v1))      
           }
@@ -1491,6 +1492,252 @@ calc.prop.vacc <- function(
                                    sum(p_1_2_n3, p_1_n2_3, p_n1_2_3)/den,
                                    sum(p_1_n2_n3, p_n1_2_n3, p_n1_n2_3)/den,
                                    p_n1_n2_n3/den))  
+     }
+     
+     return(out)
+}
+
+
+##' Calculate vaccination coverage given routine vaccination and a supplementary campaign
+##'
+##' This function calculates the proportion immune by calculating the conditional probability of routine
+##' vaccination with two- or three-dose routine coverage and one SIA campaign. The method 
+##' assumes that vaccination events are dependent, where individuals that have recieved the first
+##' dose are the most likely to recieve the second dose and those that have received both the first 
+##' and second doses are the most likely to receive the third. Receipt of a dose through the SIA campaign
+##' is dependent upon vaccination with at least one dose prior to the SIA campaign.
+##' 
+##' When \code{v3 = NULL}, the function uses the simpler two dose method.
+##' 
+##' @param v1 a scalar giving the proportion vaccinated with first routine immunization
+##' @param v2 a scalar giving the proportion vaccinated with second routine immunization
+##' @param v3 a scalar giving the proportion vaccinated with third routine immunization (default = NULL)
+##' @param S a scalar giving the proportion vaccinated with supplemental campaign
+##' 
+##' @return A dataframe containing the relative proportions of the population that have recieved 0, 1, 2, 3, or 4 doses
+##'
+##' @author John Giles
+##' 
+##' @example R/examples/calc_prop_vacc_SIA.R
+##'
+##' @family susceptibility
+##' 
+##' @export
+##' 
+
+calc.prop.vacc.SIA <- function(
+     v1,        # Proportion vaccinated with first routine immunization
+     v2,        # proportion vaccinated with second routine immunization
+     v3=NULL,   # proportion vaccinated with third routine immunization
+     S          # proportion vaccinated with supplemental campaign
+){
+     
+     if (!all(v1 >= 0 & v1 <= 1, v2 >= 0 & v2 <= 1, S >= 0 & S <= 1)) stop('Arguments must be between 0 and 1')
+     
+     p_prior <- sum(calc.prop.vacc(v1=v1, v2=v2)[1:2,2])
+     
+     if (is.null(v3)) {
+          
+          if (v2 >= v1) {
+               d_12 <- 0           # Dropout rate from 1 to 2
+          } else {
+               d_12 <- (v1 - v2)/v1
+          }
+          
+          if (S >= p_prior) {
+               d_S <- 0
+          } else {
+               d_S <- (p_prior - S)/p_prior
+          }
+          
+          # Conditional probability terms for 3 doses
+          p_1_2_S <- v1*(1-d_12)*(1-d_S)
+          
+          # Conditional probability terms for 2 doses
+          p_1_2_nS <- v1*(1-d_12)*d_S
+          
+          
+          p_1_n2_S <- v1*d_12*(1-d_S)  
+          p_1_n2_nS <- v1*d_12*d_S 
+          
+          
+          if (v2 <= v1) { 
+               
+               p_n1_2_S <- 0
+               p_n1_2_nS <- 0
+               p_n1_n2_S <- (1-v1)*(1-d_S)
+               p_n1_n2_nS <- (1-v1)*d_S
+               
+          } else {
+               
+               p_n1_2_S <- (1-v1)*(v2-v1)*(1-d_S) 
+               p_n1_2_nS <- (1-v1)*(v2-v1)*d_S
+               p_n1_n2_S <- (1-v1)*(1-(v2-v1))*(1-d_S)  
+               p_n1_n2_nS <- (1-v1)*(1-(v2-v1))*d_S  
+          }
+          
+          den <- sum(p_1_2_S, p_1_2_nS, p_1_n2_S, p_1_n2_nS,
+                     p_n1_2_S, p_n1_2_nS, p_n1_n2_S, p_n1_n2_nS)
+          
+          out <- data.frame(doses=3:0, 
+                            prop=c(p_1_2_S/den, 
+                                   sum(p_1_2_nS, p_1_n2_S, p_n1_2_S)/den, 
+                                   sum(p_1_n2_nS, p_n1_2_nS, p_n1_n2_S)/den,
+                                   p_n1_n2_nS/den))
+          
+     } else if (!is.null(v3)) {
+          
+          if(!(v3 >= 0 & v3 <= 1)) stop('Arguments must be between 0 and 1')
+          
+          p_prior <- sum(calc.prop.vacc(v1=v1, v2=v2, v3=v3)[1:3,2])
+          
+          if (v2 >= v1) {
+               d_12 <- 0           # Dropout rate from 1 to 2
+               s_12 <- v2 - v1     # Surplus of dose 2 not given to ppl who received dose 1
+          } else {
+               d_12 <- (v1 - v2)/v1
+               s_12 <- 0
+          }
+          
+          p_1_2 <- v1*(1-d_12)     # Pr( v2 | v1 )
+          
+          if (v3 >= p_1_2) {
+               d_23 <- 0            # Dropout rate from 2 doses to 3 
+               s_23 <- v3 - p_1_2   # Surplus of dose 3 not given to ppl that already received 2 doses
+          } else {
+               d_23 <- (p_1_2 - v3)/p_1_2
+               s_23 <- 0
+          }
+          
+          if (S >= p_prior) {
+               d_S <- 0              # Dropout rate from routine immunization to SIA
+          } else {
+               d_S <- (p_prior - S)/p_prior
+          }
+          
+          # Possible ways to receive 4 doses
+          
+          p_1_2_3_S <- p_1_2*(1-d_23)*(1-d_S)
+          
+          # Possible ways to receive 3 doses
+          
+          p_1_2_3_nS <- p_1_2*(1-d_23)*d_S
+          p_1_2_n3_S <- p_1_2*d_23*(1-d_S)
+          
+          if (v3 <= p_1_2) {
+               p_1_n2_3_S <- 0
+               
+          } else {
+               p_1_n2_3_S <- v1*d_12*s_23*(1-d_S)
+          }
+          
+          if (v2 <= v1) {
+               p_n1_2_3_S <- 0
+          } else if (v3 <= p_1_2) {
+               p_n1_2_3_S <- 0
+          } else {
+               p_n1_2_3_S <- (1-v1)*s_12*s_23*(1-d_S)
+          }
+          
+          # Possible ways to receive 2 doses
+          
+          p_1_2_n3_nS <- p_1_2*d_23*d_S
+          
+          if (v3 <= p_1_2) {
+               p_1_n2_3_nS <- 0
+               
+          } else {
+               p_1_n2_3_nS <- v1*d_12*s_23*d_S
+          }
+          
+          if (v2 <= v1) {
+               p_n1_2_3_nS <- 0
+          } else if (v3 <= p_1_2) {
+               p_n1_2_3_nS <- 0
+          } else {
+               p_n1_2_3_nS <- (1-v1)*s_12*s_23*d_S
+          }
+          
+          if (v3 <= p_1_2) {
+               p_1_n2_n3_S <- v1*d_12*(1-d_S)
+          } else {
+               p_1_n2_n3_S <- v1*d_12*(1-s_23)*(1-d_S)
+          }
+          
+          if (v2 <= v1) {
+               p_n1_2_n3_S <- 0
+          } else if (v3 <= p_1_2) {
+               p_n1_2_n3_S <- 0
+          } else {
+               p_n1_2_n3_S <- (1-v1)*s_12*(1-s_23)*(1-d_S)
+          }
+          
+          if (v3 <= p_1_2) {
+               p_n1_n2_3_S <- 0
+          } else if (v3 > p_1_2 & v2 <= v1) {
+               p_n1_n2_3_S <- (1-v1)*(s_23 - v1*d_12 - (1-v1)*(v2-v1)) * (1-d_S)
+          } else if (v3 > p_1_2 & v2 > v1) {
+               p_n1_n2_3_S <- (1-v1)*s_12*(s_23 - v1*d_12 - (1-v1)*(v2-v1)) * (1-d_S)
+          }
+          
+          # Possible ways to receive 1 dose
+          
+          if (v3 <= p_1_2) {
+               p_1_n2_n3_nS <- v1*d_12*d_S
+          } else {
+               p_1_n2_n3_nS <- v1*d_12*(1-s_23)*d_S
+          }
+          
+          if (v2 <= v1) {
+               p_n1_2_n3_nS <- 0
+          } else if (v3 <= p_1_2) {
+               p_n1_2_n3_nS <- 0
+          } else {
+               p_n1_2_n3_nS <- (1-v1)*s_12*(1-s_23)*d_S
+          }
+          
+          if (v3 <= p_1_2) {
+               p_n1_n2_3_nS <- 0
+          } else if (v3 > p_1_2 & v2 <= v1) {
+               p_n1_n2_3_nS <- (1-v1)*(s_23 - v1*d_12 - (1-v1)*(v2-v1)) * d_S
+          } else if (v3 > p_1_2 & v2 > v1) {
+               p_n1_n2_3_nS <- (1-v1)*s_12*(s_23 - v1*d_12 - (1-v1)*(v2-v1)) * d_S
+          }
+          
+          if (v3 <= p_1_2 & v2 <= v1) {
+               p_n1_n2_n3_S <- (1-v1)*(1-d_S)
+          } else if (v3 <= p_1_2 & v2 > v1) {
+               p_n1_n2_n3_S <- (1-v1)*(1-s_12)*(1-d_S)
+          } else if (v3 > p_1_2 & v2 <= v1) {
+               p_n1_n2_n3_S <- (1-v1)*(1-s_23)*(1-d_S)
+          } else if (v3 > p_1_2 & v2 > v1) {
+               p_n1_n2_n3_S <- (1-v1)*(1-s_12)*(1-s_23)*(1-d_S)
+          }
+          
+          # Possible ways to receive zero doses
+          
+          if (v3 <= p_1_2 & v2 <= v1) {
+               p_n1_n2_n3_nS <- (1-v1)*d_S
+          } else if (v3 <= p_1_2 & v2 > v1) {
+               p_n1_n2_n3_nS <- (1-v1)*(1-s_12)*d_S
+          } else if (v3 > p_1_2 & v2 <= v1) {
+               p_n1_n2_n3_nS <- (1-v1)*(1-s_23)*d_S
+          } else if (v3 > p_1_2 & v2 > v1) {
+               p_n1_n2_n3_nS <- (1-v1)*(1-s_12)*(1-s_23)*d_S
+          }
+          
+          den <- sum(p_1_2_3_S, p_1_2_n3_S, p_1_n2_3_S, p_n1_2_3_S,
+                     p_1_n2_n3_S, p_n1_2_n3_S, p_n1_n2_3_S, p_n1_n2_n3_S,
+                     p_1_2_3_nS, p_1_2_n3_nS, p_1_n2_3_nS, p_n1_2_3_nS,
+                     p_1_n2_n3_nS, p_n1_2_n3_nS, p_n1_n2_3_nS, p_n1_n2_n3_nS)
+          
+          out <- data.frame(doses=4:0,
+                            prop=c(p_1_2_3_S/den,
+                                   sum(p_n1_2_3_S, p_1_n2_3_S, p_1_2_n3_S, p_1_2_3_nS)/den,
+                                   sum(p_1_2_n3_nS, p_1_n2_3_nS, p_n1_2_3_nS, 
+                                       p_1_n2_n3_S, p_n1_2_n3_S, p_n1_n2_3_S)/den,
+                                   sum(p_1_n2_n3_nS, p_n1_2_n3_nS, p_n1_n2_3_nS, p_n1_n2_n3_S)/den,
+                                   p_n1_n2_n3_nS/den))  
      }
      
      return(out)
@@ -2715,7 +2962,7 @@ calc.prop.tot.trips <- function(
 ##' @param omega.1 scalar giving exponential scaling of origin population size (default = 1)
 ##' @param omega.2 scalar giving exponential scaling of destination population size (default = 1)
 ##' @param gamma scalar giving the dispersal kernel paramater (default = 1)
-##' @counts logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)
+##' @param counts logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)
 ##' 
 ##' @return a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})
 ##' 
@@ -2788,7 +3035,7 @@ sim.gravity <- function(
 ##' @param gamma scalar giving the dispersal kernel paramater (default = 1)
 ##' @param lambda matrix of trip duration decay parameters for each \eqn{ij} route
 ##' @param alpha model fitting parameter for the ECDF of lambda (default = 1)
-##' @counts logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)
+##' @param counts logical indicating whether or not to return a count variable by scaling the connectivity matrix by origin population size (\eqn{N_i}) (default = FALSE)
 ##' 
 ##' @return a matrix with values between 0 and 1 (if \code{counts = FALSE}) or positive integers (if \code{counts = TRUE})
 ##' 
