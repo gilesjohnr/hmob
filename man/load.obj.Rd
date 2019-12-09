@@ -24,9 +24,9 @@ sim <- load.obj("./output/TSIR_sim_influenza_high.Rdata")
 y.route <- load.obj(3, './data/duration_data_arrays_1day_full.Rdata')  # y.route only
 }
 \seealso{
-Other utility: \code{\link{get.legend}},
-  \code{\link{get.names}}, \code{\link{see}},
-  \code{\link{trip.map}}
+Other utility: \code{\link{get.legend}()},
+  \code{\link{get.names}()}, \code{\link{see}()},
+  \code{\link{trip.map}()}
 }
 \author{
 John Giles

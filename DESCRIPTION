@@ -7,7 +7,7 @@ Author: John R Giles
 Maintainer: John R Giles <giles@jhu.edu>
 Description: Functions for handling data, models, and simulations of human mobility patterns.
 License: GPL (>=2)
-RoxygenNote: 6.1.1
+RoxygenNote: 6.1.99.9000
 Encoding: UTF-8
 Imports: lattice, plot3D, gtools, sp, rgdal, rgeos, stringr, truncnorm, abind, MCMCvis, Metrics, reshape2
 Depends: doParallel, foreach, parallel, R (>= 2.10)

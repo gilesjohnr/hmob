@@ -17,8 +17,6 @@ calc.prop.vacc.SIA(v1, v2, v3 = NULL, S)
 }
 \value{
 A dataframe containing the relative proportions of the population that have recieved 0, 1, 2, 3, or 4 doses
-
- @author John Giles
 }
 \description{
 This function calculates the proportion immune by calculating the conditional probability of routine
@@ -51,7 +49,11 @@ calc.prop.vacc(v1=0.9, v2=0, v3=0)
 calc.prop.vacc(v1=0.9, v2=0)
 }
 \seealso{
-Other susceptibility: \code{\link{calc.prop.vacc}},
-  \code{\link{get.age.beta}}, \code{\link{get.beta.params}}
+Other susceptibility: \code{\link{calc.prop.vacc}()},
+  \code{\link{get.age.beta}()},
+  \code{\link{get.beta.params}()}
+}
+\author{
+John Giles
 }
 \concept{susceptibility}

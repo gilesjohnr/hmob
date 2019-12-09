@@ -45,9 +45,9 @@ lam <- get.param.vals(n.districts=62,
 see(lam$mean)
 }
 \seealso{
-Other model processing: \code{\link{calc.decay.stats}},
-  \code{\link{mob.data.array.pop.level}},
-  \code{\link{mob.data.array.route.level}}
+Other model processing: \code{\link{calc.decay.stats}()},
+  \code{\link{mob.data.array.pop.level}()},
+  \code{\link{mob.data.array.route.level}()}
 }
 \author{
 John Giles

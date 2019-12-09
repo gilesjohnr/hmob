@@ -111,16 +111,18 @@ m <- mob.data.array(orig=df$from,
 str(m)
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.tot.trips}},
-  \code{\link{calc.route.type}},
-  \code{\link{calc.samp.size}},
-  \code{\link{get.distance.class}},
-  \code{\link{get.distance.counts}},
-  \code{\link{get.district.names.xy}},
-  \code{\link{get.district.pop}},
-  \code{\link{get.duration.counts}},
-  \code{\link{get.holidays}}, \code{\link{get.subsamp}},
-  \code{\link{get.xy.counts}}, \code{\link{parse.longform}}
+Other data synthesis: \code{\link{calc.prop.tot.trips}()},
+  \code{\link{calc.route.type}()},
+  \code{\link{calc.samp.size}()},
+  \code{\link{get.distance.class}()},
+  \code{\link{get.distance.counts}()},
+  \code{\link{get.district.names.xy}()},
+  \code{\link{get.district.pop}()},
+  \code{\link{get.duration.counts}()},
+  \code{\link{get.holidays}()},
+  \code{\link{get.subsamp}()},
+  \code{\link{get.xy.counts}()},
+  \code{\link{parse.longform}()}
 }
 \author{
 John Giles

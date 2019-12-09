@@ -112,19 +112,20 @@ Sys.time() - t
 
 }
 \seealso{
-Other simulation: \code{\link{calc.hpd}},
-  \code{\link{calc.prop.inf}},
-  \code{\link{calc.prop.remain}},
-  \code{\link{calc.timing.magnitude}},
-  \code{\link{calc.wait.time}}, \code{\link{decay.func}},
-  \code{\link{get.age.beta}},
-  \code{\link{get.beta.params}}, \code{\link{sim.TSIR}},
-  \code{\link{sim.combine.dual}},
-  \code{\link{sim.combine}},
-  \code{\link{sim.gravity.duration}},
-  \code{\link{sim.gravity}}, \code{\link{sim.lambda}},
-  \code{\link{sim.pi}}, \code{\link{sim.rho}},
-  \code{\link{sim.tau}}
+Other simulation: \code{\link{calc.hpd}()},
+  \code{\link{calc.prop.inf}()},
+  \code{\link{calc.prop.remain}()},
+  \code{\link{calc.timing.magnitude}()},
+  \code{\link{calc.wait.time}()},
+  \code{\link{decay.func}()}, \code{\link{get.age.beta}()},
+  \code{\link{get.beta.params}()},
+  \code{\link{sim.TSIR}()},
+  \code{\link{sim.combine.dual}()},
+  \code{\link{sim.combine}()},
+  \code{\link{sim.gravity.duration}()},
+  \code{\link{sim.gravity}()}, \code{\link{sim.lambda}()},
+  \code{\link{sim.pi}()}, \code{\link{sim.rho}()},
+  \code{\link{sim.tau}()}
 }
 \author{
 John Giles
