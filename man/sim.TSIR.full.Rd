@@ -68,8 +68,6 @@ each stochastic realization of the estimated model parameters (lambda, pi, rho, 
 simulations in parallel and the \code{N.sim2} level simulations sequentially.
 }
 \examples{
-setwd("~/Dropbox/Projects/Mobility/SeasonalCommuting")
-
 # Duration data for the purpose of subsetting districts
 y.route <- load.obj(3, './data/duration_data_arrays_1day_full.Rdata')      # y.month, y.route
 y.route <- get.subsamp(y.route, min.locations=30, min.samp=20)

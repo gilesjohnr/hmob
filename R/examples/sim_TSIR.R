@@ -1,5 +1,5 @@
 
-d <- read.csv("./BeyondCommuting2/trip_lengths/trip_durations_longform_metadata_13_34_42_85_10_14_16_99_urban_rural.csv", stringsAsFactors=F)
+d <- read.csv("./data/trip_durations_longform_metadata_13_34_42_85_10_14_16_99_urban_rural.csv", stringsAsFactors=F)
 load('./data/distance_matrix_named.rdata')                         # distance.matrix
 load('./data/N_pop.rdata')                                         # N.pop
 load('./output/decay_model_route_12dists.Rdata')                   # mod.decay # Decay model parameters (Lambda)
