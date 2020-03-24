@@ -22,20 +22,24 @@ given the intercept \eqn{N0} and decay rate \eqn{\lambda} parameters using the f
 \eqn{N(y) = N0 exp(-\lambda*y)}. If \eqn{y =} duration, the function calculates the number of trips counted for a given duration.
 }
 \seealso{
-Other simulation: \code{\link{calc.hpd}()},
-  \code{\link{calc.prop.inf}()},
-  \code{\link{calc.prop.remain}()},
-  \code{\link{calc.timing.magnitude}()},
-  \code{\link{calc.wait.time}()},
-  \code{\link{get.age.beta}()},
-  \code{\link{get.beta.params}()},
-  \code{\link{sim.TSIR.full}()}, \code{\link{sim.TSIR}()},
-  \code{\link{sim.combine.dual}()},
-  \code{\link{sim.combine}()},
-  \code{\link{sim.gravity.duration}()},
-  \code{\link{sim.gravity}()}, \code{\link{sim.lambda}()},
-  \code{\link{sim.pi}()}, \code{\link{sim.rho}()},
-  \code{\link{sim.tau}()}
+Other simulation: 
+\code{\link{calc.hpd}()},
+\code{\link{calc.prop.inf}()},
+\code{\link{calc.prop.remain}()},
+\code{\link{calc.timing.magnitude}()},
+\code{\link{calc.wait.time}()},
+\code{\link{get.age.beta}()},
+\code{\link{get.beta.params}()},
+\code{\link{sim.TSIR.full}()},
+\code{\link{sim.TSIR}()},
+\code{\link{sim.combine.dual}()},
+\code{\link{sim.combine}()},
+\code{\link{sim.gravity.duration}()},
+\code{\link{sim.gravity}()},
+\code{\link{sim.lambda}()},
+\code{\link{sim.pi}()},
+\code{\link{sim.rho}()},
+\code{\link{sim.tau}()}
 }
 \author{
 John Giles

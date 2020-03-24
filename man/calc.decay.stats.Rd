@@ -44,9 +44,10 @@ mod.decay <- calc.decay.stats(x=out,
                               dist.mat=distance.matrix[districts, districts])
 }
 \seealso{
-Other model processing: \code{\link{get.param.vals}()},
-  \code{\link{mob.data.array.pop.level}()},
-  \code{\link{mob.data.array.route.level}()}
+Other model processing: 
+\code{\link{get.param.vals}()},
+\code{\link{mob.data.array.pop.level}()},
+\code{\link{mob.data.array.route.level}()}
 }
 \author{
 John Giles

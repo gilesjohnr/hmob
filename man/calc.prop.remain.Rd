@@ -4,13 +4,15 @@
 \alias{calc.prop.remain}
 \title{Proportion of individuals remaining for full epidemic generation}
 \usage{
-calc.prop.remain(d, gen.t, sub.samp = NULL)
+calc.prop.remain(d, gen.t, max.gen = NULL, sub.samp = NULL)
 }
 \arguments{
 \item{d}{a three- or four-dimensional array containing route- or month-level trip duration counts produced by the \code{\link{mob.data.array}} function. 
 Note that \code{calc.prop.remain} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)}
 
 \item{gen.t}{the time interval in days used to define the epidemic generation}
+
+\item{max.gen}{the maximum number of generations to evaluate proportion of individuals remaining}
 
 \item{sub.samp}{scalar indicating the number of generations to subsample, if NULL (default), will use all observed generation times in the data (which will increase computation time for large numbers of locations)}
 }
@@ -47,19 +49,24 @@ p2.mean <- apply(p2, 2, mean, na.rm=TRUE)
 p2.var <- apply(p2, 2, var, na.rm=TRUE)
 }
 \seealso{
-Other simulation: \code{\link{calc.hpd}()},
-  \code{\link{calc.prop.inf}()},
-  \code{\link{calc.timing.magnitude}()},
-  \code{\link{calc.wait.time}()},
-  \code{\link{decay.func}()}, \code{\link{get.age.beta}()},
-  \code{\link{get.beta.params}()},
-  \code{\link{sim.TSIR.full}()}, \code{\link{sim.TSIR}()},
-  \code{\link{sim.combine.dual}()},
-  \code{\link{sim.combine}()},
-  \code{\link{sim.gravity.duration}()},
-  \code{\link{sim.gravity}()}, \code{\link{sim.lambda}()},
-  \code{\link{sim.pi}()}, \code{\link{sim.rho}()},
-  \code{\link{sim.tau}()}
+Other simulation: 
+\code{\link{calc.hpd}()},
+\code{\link{calc.prop.inf}()},
+\code{\link{calc.timing.magnitude}()},
+\code{\link{calc.wait.time}()},
+\code{\link{decay.func}()},
+\code{\link{get.age.beta}()},
+\code{\link{get.beta.params}()},
+\code{\link{sim.TSIR.full}()},
+\code{\link{sim.TSIR}()},
+\code{\link{sim.combine.dual}()},
+\code{\link{sim.combine}()},
+\code{\link{sim.gravity.duration}()},
+\code{\link{sim.gravity}()},
+\code{\link{sim.lambda}()},
+\code{\link{sim.pi}()},
+\code{\link{sim.rho}()},
+\code{\link{sim.tau}()}
 }
 \author{
 John Giles

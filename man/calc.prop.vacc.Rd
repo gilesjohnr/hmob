@@ -79,9 +79,10 @@ abline(v=q[2], lwd=3)
 abline(v=q[c(1,3)], lty=2, lwd=2)
 }
 \seealso{
-Other susceptibility: \code{\link{calc.prop.vacc.SIA}()},
-  \code{\link{get.age.beta}()},
-  \code{\link{get.beta.params}()}
+Other susceptibility: 
+\code{\link{calc.prop.vacc.SIA}()},
+\code{\link{get.age.beta}()},
+\code{\link{get.beta.params}()}
 }
 \author{
 John Giles

@@ -33,18 +33,19 @@ write.csv(tmp, file="BeyondCommuting2/trip_lengths/trip_durations_longform.csv",
 Sys.time() - t
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.tot.trips}()},
-  \code{\link{calc.route.type}()},
-  \code{\link{calc.samp.size}()},
-  \code{\link{get.distance.class}()},
-  \code{\link{get.distance.counts}()},
-  \code{\link{get.district.names.xy}()},
-  \code{\link{get.district.pop}()},
-  \code{\link{get.duration.counts}()},
-  \code{\link{get.holidays}()},
-  \code{\link{get.subsamp}()},
-  \code{\link{get.xy.counts}()},
-  \code{\link{mob.data.array}()}
+Other data synthesis: 
+\code{\link{calc.prop.tot.trips}()},
+\code{\link{calc.route.type}()},
+\code{\link{calc.samp.size}()},
+\code{\link{get.distance.class}()},
+\code{\link{get.distance.counts}()},
+\code{\link{get.district.names.xy}()},
+\code{\link{get.district.pop}()},
+\code{\link{get.duration.counts}()},
+\code{\link{get.holidays}()},
+\code{\link{get.subsamp}()},
+\code{\link{get.xy.counts}()},
+\code{\link{mob.data.array}()}
 }
 \author{
 John Giles

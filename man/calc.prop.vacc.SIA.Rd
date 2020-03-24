@@ -49,9 +49,10 @@ calc.prop.vacc(v1=0.9, v2=0, v3=0)
 calc.prop.vacc(v1=0.9, v2=0)
 }
 \seealso{
-Other susceptibility: \code{\link{calc.prop.vacc}()},
-  \code{\link{get.age.beta}()},
-  \code{\link{get.beta.params}()}
+Other susceptibility: 
+\code{\link{calc.prop.vacc}()},
+\code{\link{get.age.beta}()},
+\code{\link{get.beta.params}()}
 }
 \author{
 John Giles

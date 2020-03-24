@@ -4,8 +4,15 @@
 \alias{get.param.vals}
 \title{Get posterior parameter estimates from a model object}
 \usage{
-get.param.vals(n.districts, n.t, name, level = "route", stats,
-  type = "matrix", n.cores = 2)
+get.param.vals(
+  n.districts,
+  n.t,
+  name,
+  level = "route",
+  stats,
+  type = "matrix",
+  n.cores = 2
+)
 }
 \arguments{
 \item{n.districts}{Number of districts in model}
@@ -45,9 +52,10 @@ lam <- get.param.vals(n.districts=62,
 see(lam$mean)
 }
 \seealso{
-Other model processing: \code{\link{calc.decay.stats}()},
-  \code{\link{mob.data.array.pop.level}()},
-  \code{\link{mob.data.array.route.level}()}
+Other model processing: 
+\code{\link{calc.decay.stats}()},
+\code{\link{mob.data.array.pop.level}()},
+\code{\link{mob.data.array.route.level}()}
 }
 \author{
 John Giles

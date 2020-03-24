@@ -1080,6 +1080,7 @@ get.route.type <- function(x, # dataframe
 ##' @param d a three- or four-dimensional array containing route- or month-level trip duration counts produced by the \code{\link{mob.data.array}} function. 
 ##' Note that \code{calc.prop.remain} assumes that the duration data array is NOT aggregated (e.g. \code{mob.data.array} argument \code{agg.int}=1)
 ##' @param gen.t the time interval in days used to define the epidemic generation
+##' @param max.gen the maximum number of generations to evaluate proportion of individuals remaining
 ##' @param sub.samp scalar indicating the number of generations to subsample, if NULL (default), will use all observed generation times in the data (which will increase computation time for large numbers of locations)
 ##' 
 ##' @return if \code{d} is a month-level duration data array, then a 4D array with values between 0 and 1 is returned. If \code{d} is a route-level duration data array, 
@@ -1096,14 +1097,15 @@ get.route.type <- function(x, # dataframe
 
 calc.prop.remain <- function(d,                # 4D duration data array produced by the mob.data.array function
                              gen.t,            # interval used to define the epidemic generation
+                             max.gen=NULL,
                              sub.samp=NULL     # number of generation to subsamp, if NULL (default) will use all observed generation times in the data
 ) {
      
      if (is.null(dimnames(d)$duration)) {
           stop("The calc.prop.remain function assumes that the duration values in the data array are NOT aggregated. Check that you have run the mob.data.array function with agg.int=1")
-     } 
-     
-     max.gen <- ceiling(max(as.numeric(dimnames(d)$duration))/gen.t)
+     }
+        
+     if (is.null(max.gen)) max.gen <- ceiling(max(as.numeric(dimnames(d)$duration))/gen.t)
      
      if (is.null(sub.samp)) {
           
@@ -2971,6 +2973,7 @@ calc.prop.tot.trips <- function(
 ##' @example R/examples/sim_gravity_basic.R
 ##'
 ##' @family simulation
+##' @family gravity
 ##' 
 ##' @export
 ##' 
@@ -3044,6 +3047,7 @@ sim.gravity <- function(
 ##' @example R/examples/sim_gravity_duration.R
 ##'
 ##' @family simulation
+##' @family gravity
 ##' 
 ##' @export
 ##' 
@@ -3111,3 +3115,126 @@ sim.gravity.duration <- function(
      return(x)
 }
 
+
+
+
+
+##' Fit gravity model to movement matrix
+##' 
+##' This function fits gravity model parameters to a supplied movement matrix using Bayesian MCMC inference. The function defines the model and serves as a wrapper for the \code{\link{run.jags}}
+##' function in the \code{\link{runjags}} package. Gravity model formula:
+##' \deqn{
+##'     \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
+##' }
+##' 
+##' @param M named matrix of trip counts among all \eqn{ij} location pairs
+##' @param D named matrix of distances among all \eqn{ij} location pairs
+##' @param N named vector of population sizes for each location
+##' @param n.chain number of MCMC sampling chains
+##' @param n.adapt number of adaptive iterations
+##' @param n.burn number of iterations to discard before sampling of chains begins (burn in)
+##' @param n.samp number of iterations to sample each chain
+##' @param n.thin interval to thin samples 
+##' @param parallel logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)
+##' 
+##' @return a runjags model object conataining fitted gravity model paramters
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/fit_gravity.R
+##'
+##' @family model
+##' @family gravity
+##' 
+##' @export
+##' 
+
+fit.gravity <- function(
+        M,   
+        D,  
+        N,  
+        n.chain=4,
+        n.adapt=1000,
+        n.burn=5000,
+        n.samp=5000,
+        n.thin=1,
+        parallel=FALSE
+) {
+        
+        if (!(identical(dim(M)[1], dim(D)[1], length(N)))) stop('Dimensions of input data must match')
+        if ( !(identical(dimnames(M)[[1]], dimnames(D)[[1]])) | !(identical(dimnames(M)[[1]], names(N))) ) {
+                warning('Dimension names of input data do not match.')
+        }
+        
+        jags.data <- list(
+                M=M,                     
+                D=D,                     
+                N=N,                     
+                n.districts=dim(M)[1]  
+        )
+        
+        gravity.model <- "
+          model {     
+               
+               # Poisson likelihood
+               for (i in 1:n.districts) {
+                    for (j in 1:n.districts) {
+                         
+                         M[i,j] ~ dpois(pi[i,j]*N[i]) 
+                    }
+                    
+                    pi[i,1:n.districts] <- c[i,]/sum(c[i,])
+               }
+               
+               for (i in 1:n.districts) {
+                    for (j in 1:n.districts) {
+                         
+                         # Gravity model
+                         c[i,j] <- ifelse(
+                              i == j, 
+                              0,
+                              exp(log(theta) + (omega.1*log(N[i]) + omega.2*log(N[j]) - log( f.d[i,j] )))
+                         )
+                         
+                         # Dispersal kernel
+                         f.d[i,j] <- D[i,j]^gamma
+                    }
+               }
+               
+               ### Priors ###
+               theta ~ dgamma(1, 0.05)
+               omega.1 ~ dgamma(1, 0.05)
+               omega.2 ~ dgamma(1, 0.05)
+               gamma ~ dgamma(1, 0.05)
+               
+          }"
+        
+        params <- c('omega.1', 'omega.2', 'theta', 'gamma')
+        
+        init.list <- replicate(n.chain, 
+                               list(.RNG.name='lecuyer::RngStream',
+                                    .RNG.seed= sample(1:1e6, 1)), 
+                               simplify=FALSE)
+        
+        if (parallel == TRUE) {
+                
+                method <- 'parallel'
+                
+        } else if (parallel == FALSE) {
+                
+                method <- 'rjags'
+        }
+        
+        runjags::run.jags(model=gravity.model,
+                          data=jags.data,
+                          monitor=params,
+                          n.chains=n.chain,
+                          adapt=n.adapt,
+                          burnin=n.burn,
+                          sample=n.samp,
+                          thin=n.thin,
+                          inits=init.list,
+                          modules=c('lecuyer'),
+                          method=method,
+                          summarise=FALSE)
+}

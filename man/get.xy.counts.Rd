@@ -4,8 +4,17 @@
 \alias{get.xy.counts}
 \title{Get counts of any two variables (e.g. distance vs duration)}
 \usage{
-get.xy.counts(a, d, x.var, y.var = "duration", x.int, y.int,
-  type = "matrix", distID = districtIDs, n.cores = NULL)
+get.xy.counts(
+  a,
+  d,
+  x.var,
+  y.var = "duration",
+  x.int,
+  y.int,
+  type = "matrix",
+  distID = districtIDs,
+  n.cores = NULL
+)
 }
 \arguments{
 \item{a}{origin district (can take integer ID or character name)}
@@ -61,18 +70,19 @@ plot3D::hist3D(x=as.numeric(rownames(m)), y=as.numeric(colnames(m)), z=log(m+1),
                space=0.05, lighting=T, light="diffuse")
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.tot.trips}()},
-  \code{\link{calc.route.type}()},
-  \code{\link{calc.samp.size}()},
-  \code{\link{get.distance.class}()},
-  \code{\link{get.distance.counts}()},
-  \code{\link{get.district.names.xy}()},
-  \code{\link{get.district.pop}()},
-  \code{\link{get.duration.counts}()},
-  \code{\link{get.holidays}()},
-  \code{\link{get.subsamp}()},
-  \code{\link{mob.data.array}()},
-  \code{\link{parse.longform}()}
+Other data synthesis: 
+\code{\link{calc.prop.tot.trips}()},
+\code{\link{calc.route.type}()},
+\code{\link{calc.samp.size}()},
+\code{\link{get.distance.class}()},
+\code{\link{get.distance.counts}()},
+\code{\link{get.district.names.xy}()},
+\code{\link{get.district.pop}()},
+\code{\link{get.duration.counts}()},
+\code{\link{get.holidays}()},
+\code{\link{get.subsamp}()},
+\code{\link{mob.data.array}()},
+\code{\link{parse.longform}()}
 }
 \author{
 John Giles

@@ -1,15 +1,15 @@
 Package: hmob
 Type: Package
 Title: Tools for analyzing human mobility data
-Version: 0.1.6
+Version: 0.1.7
 Date: 2019-01-22
 Author: John R Giles
 Maintainer: John R Giles <giles@jhu.edu>
 Description: Functions for handling data, models, and simulations of human mobility patterns.
 License: GPL (>=2)
-RoxygenNote: 6.1.99.9000
+RoxygenNote: 7.0.1
 Encoding: UTF-8
-Imports: lattice, plot3D, gtools, sp, rgdal, rgeos, stringr, truncnorm, abind, MCMCvis, Metrics, reshape2
+Imports: lattice, plot3D, gtools, sp, rgdal, rgeos, stringr, truncnorm, abind, MCMCvis, Metrics, reshape2, rjags, runjags
 Depends: doParallel, foreach, parallel, R (>= 2.10)
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr

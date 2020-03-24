@@ -31,9 +31,11 @@ trip.map(42, c(16, 20, 1)) # Get map with multiple destinations
 title(get.names(42))
 }
 \seealso{
-Other utility: \code{\link{get.legend}()},
-  \code{\link{get.names}()}, \code{\link{load.obj}()},
-  \code{\link{see}()}
+Other utility: 
+\code{\link{get.legend}()},
+\code{\link{get.names}()},
+\code{\link{load.obj}()},
+\code{\link{see}()}
 }
 \author{
 John Giles

@@ -4,8 +4,14 @@
 \alias{get.distance.counts}
 \title{Get matrix of trip distance counts}
 \usage{
-get.distance.counts(a, t, d, type = "matrix", distID = districtIDs,
-  n.cores = NULL)
+get.distance.counts(
+  a,
+  t,
+  d,
+  type = "matrix",
+  distID = districtIDs,
+  n.cores = NULL
+)
 }
 \arguments{
 \item{a}{origin district (can take integer ID or character name)}
@@ -46,18 +52,19 @@ lattice::wireframe(m[,1:50],
                    screen = list(z = 230, x = -60))
 }
 \seealso{
-Other data synthesis: \code{\link{calc.prop.tot.trips}()},
-  \code{\link{calc.route.type}()},
-  \code{\link{calc.samp.size}()},
-  \code{\link{get.distance.class}()},
-  \code{\link{get.district.names.xy}()},
-  \code{\link{get.district.pop}()},
-  \code{\link{get.duration.counts}()},
-  \code{\link{get.holidays}()},
-  \code{\link{get.subsamp}()},
-  \code{\link{get.xy.counts}()},
-  \code{\link{mob.data.array}()},
-  \code{\link{parse.longform}()}
+Other data synthesis: 
+\code{\link{calc.prop.tot.trips}()},
+\code{\link{calc.route.type}()},
+\code{\link{calc.samp.size}()},
+\code{\link{get.distance.class}()},
+\code{\link{get.district.names.xy}()},
+\code{\link{get.district.pop}()},
+\code{\link{get.duration.counts}()},
+\code{\link{get.holidays}()},
+\code{\link{get.subsamp}()},
+\code{\link{get.xy.counts}()},
+\code{\link{mob.data.array}()},
+\code{\link{parse.longform}()}
 }
 \author{
 John Giles

@@ -34,7 +34,8 @@ curve(dgamma(x, prm[1], prm[2]), 0, 1) # prior for shape parameter
 abline(v=0.65, lty=2, col='red')
 }
 \seealso{
-Other random number generators: \code{\link{sim.gamma}()}
+Other random number generators: 
+\code{\link{sim.gamma}()}
 }
 \author{
 John Giles

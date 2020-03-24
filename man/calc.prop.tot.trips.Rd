@@ -4,8 +4,14 @@
 \alias{calc.prop.tot.trips}
 \title{Calculate the cumulative proportion of trips for values of a given variable}
 \usage{
-calc.prop.tot.trips(variable, counts, type, vals, parallel = FALSE,
-  n.cores = 2)
+calc.prop.tot.trips(
+  variable,
+  counts,
+  type,
+  vals,
+  parallel = FALSE,
+  n.cores = 2
+)
 }
 \arguments{
 \item{variable}{a vector of variable values for which to calculate the proportion of total trips (e.g. 'duration' or 'distance')}
@@ -56,18 +62,19 @@ calc.prop.tot.trips(variable=d$distance,
                     n.cores=4)
 }
 \seealso{
-Other data synthesis: \code{\link{calc.route.type}()},
-  \code{\link{calc.samp.size}()},
-  \code{\link{get.distance.class}()},
-  \code{\link{get.distance.counts}()},
-  \code{\link{get.district.names.xy}()},
-  \code{\link{get.district.pop}()},
-  \code{\link{get.duration.counts}()},
-  \code{\link{get.holidays}()},
-  \code{\link{get.subsamp}()},
-  \code{\link{get.xy.counts}()},
-  \code{\link{mob.data.array}()},
-  \code{\link{parse.longform}()}
+Other data synthesis: 
+\code{\link{calc.route.type}()},
+\code{\link{calc.samp.size}()},
+\code{\link{get.distance.class}()},
+\code{\link{get.distance.counts}()},
+\code{\link{get.district.names.xy}()},
+\code{\link{get.district.pop}()},
+\code{\link{get.duration.counts}()},
+\code{\link{get.holidays}()},
+\code{\link{get.subsamp}()},
+\code{\link{get.xy.counts}()},
+\code{\link{mob.data.array}()},
+\code{\link{parse.longform}()}
 }
 \author{
 John Giles

@@ -4,9 +4,21 @@
 \alias{sim.TSIR}
 \title{Simulate stochastic TSIR}
 \usage{
-sim.TSIR(districts, N, tau = NULL, lambda = NULL, pi, rho = NULL,
-  beta, gamma, gen.t, I.0, max.t = 100, duration = TRUE,
-  freq.dep = TRUE)
+sim.TSIR(
+  districts,
+  N,
+  tau = NULL,
+  lambda = NULL,
+  pi,
+  rho = NULL,
+  beta,
+  gamma,
+  gen.t,
+  I.0,
+  max.t = 100,
+  duration = TRUE,
+  freq.dep = TRUE
+)
 }
 \arguments{
 \item{districts}{Vector of district names}
@@ -114,20 +126,24 @@ grav.dur <- sim.TSIR(districts=districts,
 grav.dur[,,1:5]
 }
 \seealso{
-Other simulation: \code{\link{calc.hpd}()},
-  \code{\link{calc.prop.inf}()},
-  \code{\link{calc.prop.remain}()},
-  \code{\link{calc.timing.magnitude}()},
-  \code{\link{calc.wait.time}()},
-  \code{\link{decay.func}()}, \code{\link{get.age.beta}()},
-  \code{\link{get.beta.params}()},
-  \code{\link{sim.TSIR.full}()},
-  \code{\link{sim.combine.dual}()},
-  \code{\link{sim.combine}()},
-  \code{\link{sim.gravity.duration}()},
-  \code{\link{sim.gravity}()}, \code{\link{sim.lambda}()},
-  \code{\link{sim.pi}()}, \code{\link{sim.rho}()},
-  \code{\link{sim.tau}()}
+Other simulation: 
+\code{\link{calc.hpd}()},
+\code{\link{calc.prop.inf}()},
+\code{\link{calc.prop.remain}()},
+\code{\link{calc.timing.magnitude}()},
+\code{\link{calc.wait.time}()},
+\code{\link{decay.func}()},
+\code{\link{get.age.beta}()},
+\code{\link{get.beta.params}()},
+\code{\link{sim.TSIR.full}()},
+\code{\link{sim.combine.dual}()},
+\code{\link{sim.combine}()},
+\code{\link{sim.gravity.duration}()},
+\code{\link{sim.gravity}()},
+\code{\link{sim.lambda}()},
+\code{\link{sim.pi}()},
+\code{\link{sim.rho}()},
+\code{\link{sim.tau}()}
 }
 \author{
 John Giles

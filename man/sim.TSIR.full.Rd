@@ -4,9 +4,25 @@
 \alias{sim.TSIR.full}
 \title{Simulate full stochastic TSIR in parallel}
 \usage{
-sim.TSIR.full(N, D, B, R, lambda, prop.leave, prop.remain, beta, gamma,
-  gen, I.0, N.sim1, N.sim2 = 100, max.t = 100, freq.dep = TRUE,
-  parallel = FALSE, n.cores = NULL)
+sim.TSIR.full(
+  N,
+  D,
+  B,
+  R,
+  lambda,
+  prop.leave,
+  prop.remain,
+  beta,
+  gamma,
+  gen,
+  I.0,
+  N.sim1,
+  N.sim2 = 100,
+  max.t = 100,
+  freq.dep = TRUE,
+  parallel = FALSE,
+  n.cores = NULL
+)
 }
 \arguments{
 \item{N}{Vector giving the population size of each district}
@@ -33,7 +49,7 @@ sim.TSIR.full(N, D, B, R, lambda, prop.leave, prop.remain, beta, gamma,
 
 \item{N.sim2}{Number of times to simulate epidemic outcomes under each realization of model parameters (lambda, pi, tau, rho; default = 100)}
 
-\item{max.t}{Maximum number of epidemic generations}
+\item{max.t}{Maximum number of generations (default = 100)}
 
 \item{freq.dep}{Logical indicating frequency (\code{TRUE}) or density dependent (\code{FALSE}) transmission}
 
@@ -42,8 +58,6 @@ sim.TSIR.full(N, D, B, R, lambda, prop.leave, prop.remain, beta, gamma,
 \item{n.cores}{Number of cores to use when running in parallel}
 
 \item{gen.t}{Pathogen generation time (days)}
-
-\item{max.t}{Maximum number of generations (default = 100)}
 }
 \value{
 a list containing simulations using the basic gravity model and the gravity model with duration
@@ -112,20 +126,24 @@ Sys.time() - t
 
 }
 \seealso{
-Other simulation: \code{\link{calc.hpd}()},
-  \code{\link{calc.prop.inf}()},
-  \code{\link{calc.prop.remain}()},
-  \code{\link{calc.timing.magnitude}()},
-  \code{\link{calc.wait.time}()},
-  \code{\link{decay.func}()}, \code{\link{get.age.beta}()},
-  \code{\link{get.beta.params}()},
-  \code{\link{sim.TSIR}()},
-  \code{\link{sim.combine.dual}()},
-  \code{\link{sim.combine}()},
-  \code{\link{sim.gravity.duration}()},
-  \code{\link{sim.gravity}()}, \code{\link{sim.lambda}()},
-  \code{\link{sim.pi}()}, \code{\link{sim.rho}()},
-  \code{\link{sim.tau}()}
+Other simulation: 
+\code{\link{calc.hpd}()},
+\code{\link{calc.prop.inf}()},
+\code{\link{calc.prop.remain}()},
+\code{\link{calc.timing.magnitude}()},
+\code{\link{calc.wait.time}()},
+\code{\link{decay.func}()},
+\code{\link{get.age.beta}()},
+\code{\link{get.beta.params}()},
+\code{\link{sim.TSIR}()},
+\code{\link{sim.combine.dual}()},
+\code{\link{sim.combine}()},
+\code{\link{sim.gravity.duration}()},
+\code{\link{sim.gravity}()},
+\code{\link{sim.lambda}()},
+\code{\link{sim.pi}()},
+\code{\link{sim.rho}()},
+\code{\link{sim.tau}()}
 }
 \author{
 John Giles

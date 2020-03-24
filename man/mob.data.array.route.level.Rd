@@ -57,9 +57,10 @@ str(m)
 m2 <- mob.data.array.route.level(m, 'duration')
 }
 \seealso{
-Other model processing: \code{\link{calc.decay.stats}()},
-  \code{\link{get.param.vals}()},
-  \code{\link{mob.data.array.pop.level}()}
+Other model processing: 
+\code{\link{calc.decay.stats}()},
+\code{\link{get.param.vals}()},
+\code{\link{mob.data.array.pop.level}()}
 }
 \author{
 John Giles

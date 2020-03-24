@@ -4,8 +4,17 @@
 \alias{fit.gravity}
 \title{Fit gravity model to movement matrix}
 \usage{
-fit.gravity(M, D, N, n.chain = 4, n.adapt = 1000, n.burn = 5000,
-  n.samp = 5000, n.thin = 1, parallel = FALSE)
+fit.gravity(
+  M,
+  D,
+  N,
+  n.chain = 4,
+  n.adapt = 1000,
+  n.burn = 5000,
+  n.samp = 5000,
+  n.thin = 1,
+  parallel = FALSE
+)
 }
 \arguments{
 \item{M}{named matrix of trip counts among all \eqn{ij} location pairs}
@@ -61,8 +70,9 @@ summary(out)
 
 }
 \seealso{
-Other gravity: \code{\link{sim.gravity.duration}()},
-  \code{\link{sim.gravity}()}
+Other gravity: 
+\code{\link{sim.gravity.duration}()},
+\code{\link{sim.gravity}()}
 }
 \author{
 John Giles

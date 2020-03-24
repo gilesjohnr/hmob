@@ -4,8 +4,15 @@
 \alias{sim.gravity}
 \title{Simulate connectivity values using gravity model}
 \usage{
-sim.gravity(N, D, theta = 1, omega.1 = 1, omega.2 = 1, gamma = 1,
-  counts = FALSE)
+sim.gravity(
+  N,
+  D,
+  theta = 1,
+  omega.1 = 1,
+  omega.2 = 1,
+  gamma = 1,
+  counts = FALSE
+)
 }
 \arguments{
 \item{N}{vector of population sizes}
@@ -57,21 +64,31 @@ M.hat <- sim.gravity(N=N,
                      counts=TRUE)
 }
 \seealso{
-Other simulation: \code{\link{calc.hpd}()},
-  \code{\link{calc.prop.inf}()},
-  \code{\link{calc.prop.remain}()},
-  \code{\link{calc.timing.magnitude}()},
-  \code{\link{calc.wait.time}()},
-  \code{\link{decay.func}()}, \code{\link{get.age.beta}()},
-  \code{\link{get.beta.params}()},
-  \code{\link{sim.TSIR.full}()}, \code{\link{sim.TSIR}()},
-  \code{\link{sim.combine.dual}()},
-  \code{\link{sim.combine}()},
-  \code{\link{sim.gravity.duration}()},
-  \code{\link{sim.lambda}()}, \code{\link{sim.pi}()},
-  \code{\link{sim.rho}()}, \code{\link{sim.tau}()}
+Other simulation: 
+\code{\link{calc.hpd}()},
+\code{\link{calc.prop.inf}()},
+\code{\link{calc.prop.remain}()},
+\code{\link{calc.timing.magnitude}()},
+\code{\link{calc.wait.time}()},
+\code{\link{decay.func}()},
+\code{\link{get.age.beta}()},
+\code{\link{get.beta.params}()},
+\code{\link{sim.TSIR.full}()},
+\code{\link{sim.TSIR}()},
+\code{\link{sim.combine.dual}()},
+\code{\link{sim.combine}()},
+\code{\link{sim.gravity.duration}()},
+\code{\link{sim.lambda}()},
+\code{\link{sim.pi}()},
+\code{\link{sim.rho}()},
+\code{\link{sim.tau}()}
+
+Other gravity: 
+\code{\link{fit.gravity}()},
+\code{\link{sim.gravity.duration}()}
 }
 \author{
 John Giles
 }
+\concept{gravity}
 \concept{simulation}
