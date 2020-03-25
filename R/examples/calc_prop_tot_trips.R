@@ -1,5 +1,5 @@
 # Longform trip lengths with all metadata attached
-d <- read.csv("../SeasonalCommuting/BeyondCommuting2/trip_lengths/trip_durations_longform_metadata.csv", stringsAsFactors=F)
+d <- read.csv("./data/trip_durations_longform_metadata_13_34_42_85_10_14_16_99_urban_rural.csv", stringsAsFactors=F)
 
 # Proportion of total trips with a duration less than the given values
 calc.prop.tot.trips(variable=d$duration, 

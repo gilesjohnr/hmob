@@ -25,8 +25,10 @@ samp.size <- calc.samp.size(y.route)
 Other data synthesis: 
 \code{\link{calc.prop.tot.trips}()},
 \code{\link{calc.route.type}()},
+\code{\link{get.crossdist}()},
 \code{\link{get.distance.class}()},
 \code{\link{get.distance.counts}()},
+\code{\link{get.distance.matrix}()},
 \code{\link{get.district.names.xy}()},
 \code{\link{get.district.pop}()},
 \code{\link{get.duration.counts}()},

@@ -40,7 +40,7 @@ the array. If a covariate is provided in \code{variable}, the function will retu
 }
 \examples{
 # Subset of 5 high pop density and 7 low pop density
-df <- read.csv("BeyondCommuting2/trip_lengths/trip_durations_longform_metadata_12_dists_hi_lo_dens.csv", stringsAsFactors=F)
+df <- read.csv("./data/trip_durations_longform_metadata_12_dists_hi_lo_dens.csv", stringsAsFactors=F)
 
 # Simple route-level movement matrix
 m <- mob.data.array(orig=df$from,
@@ -122,8 +122,10 @@ Other data synthesis:
 \code{\link{calc.prop.tot.trips}()},
 \code{\link{calc.route.type}()},
 \code{\link{calc.samp.size}()},
+\code{\link{get.crossdist}()},
 \code{\link{get.distance.class}()},
 \code{\link{get.distance.counts}()},
+\code{\link{get.distance.matrix}()},
 \code{\link{get.district.names.xy}()},
 \code{\link{get.district.pop}()},
 \code{\link{get.duration.counts}()},

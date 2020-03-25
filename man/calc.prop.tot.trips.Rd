@@ -33,7 +33,7 @@ the values provided in the \code{vals} vector.
 }
 \examples{
 # Longform trip lengths with all metadata attached
-d <- read.csv("../SeasonalCommuting/BeyondCommuting2/trip_lengths/trip_durations_longform_metadata.csv", stringsAsFactors=F)
+d <- read.csv("./data/trip_durations_longform_metadata_13_34_42_85_10_14_16_99_urban_rural.csv", stringsAsFactors=F)
 
 # Proportion of total trips with a duration less than the given values
 calc.prop.tot.trips(variable=d$duration, 
@@ -65,8 +65,10 @@ calc.prop.tot.trips(variable=d$distance,
 Other data synthesis: 
 \code{\link{calc.route.type}()},
 \code{\link{calc.samp.size}()},
+\code{\link{get.crossdist}()},
 \code{\link{get.distance.class}()},
 \code{\link{get.distance.counts}()},
+\code{\link{get.distance.matrix}()},
 \code{\link{get.district.names.xy}()},
 \code{\link{get.district.pop}()},
 \code{\link{get.duration.counts}()},

@@ -3238,3 +3238,77 @@ fit.gravity <- function(
                           method=method,
                           summarise=FALSE)
 }
+
+
+##' Build distance matrix from XY coordinates
+##' 
+##' This function builds the pairwise distance matrix from vectors of XY coordinates and associated names.
+##' 
+##' @param x vector giving X coordinates
+##' @param y vector giving Y coordinates
+##' @param id vector of names for each location (default=NULL)
+
+##' @return a named matrix of pairwise distances among locations
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_distance_matrix.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+get.distance.matrix <- function(x,   # x coord
+                                y,   # y coord 
+                                id=NULL   # name associated with each element
+) {
+     xy <- cbind(x, y)
+     window <- spatstat::bounding.box.xy(xy)
+     out <- spatstat::pairdist(spatstat::as.ppp(xy, window, check=FALSE))
+     if (!is.null(id)) dimnames(out) <- list(origin=id, destination=id)
+     out
+}
+
+##' Get cross distances between two sets of points
+##' 
+##' Takes the XY coordinates of two sets locations and returns cross distance for all unique combinations.
+##' 
+##' @param xy1 two column matrix of XY coordinates for first group
+##' @param xy2 two column matrix of XY coordinates for second group
+##' @param id2 optional names for first group
+##' @param id2 optional names for second group
+##' 
+##' @return numeric scalar or matrix
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_crossdist.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+get.crossdist <- function(xy1,
+                          xy2,
+                          id1=NULL,
+                          id2=NULL
+) {
+     
+     if (!is.null(xy1) | !is.null(xy2)) colnames(xy1) <- colnames(xy2) <- rep(NA, ncol(xy1))
+     
+     suppressWarnings(
+          window <- spatstat::bounding.box.xy(rbind(xy1, xy2))
+     )
+     
+     out <-  spatstat::crossdist(spatstat::as.ppp(xy1, window, check=FALSE),
+                                 spatstat::as.ppp(xy2, window, check=FALSE))
+     
+     dimnames(out) <- list(origin=id1, destination=id2)
+     
+     if (!is.null(id1)) out <- out[order(dimnames(out)$origin),]
+     if (!is.null(id2)) out <- out[,order(dimnames(out)$destination)]
+     
+     out
+}

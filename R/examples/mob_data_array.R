@@ -1,5 +1,5 @@
 # Subset of 5 high pop density and 7 low pop density
-df <- read.csv("BeyondCommuting2/trip_lengths/trip_durations_longform_metadata_12_dists_hi_lo_dens.csv", stringsAsFactors=F)
+df <- read.csv("./data/trip_durations_longform_metadata_12_dists_hi_lo_dens.csv", stringsAsFactors=F)
 
 # Simple route-level movement matrix
 m <- mob.data.array(orig=df$from,
