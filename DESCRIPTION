@@ -9,6 +9,7 @@ Description: Functions for handling data, models, and simulations of human mobil
 License: GPL (>=2)
 RoxygenNote: 7.0.1
 Encoding: UTF-8
+LazyData: true
 Imports: lattice, plot3D, gtools, sp, rgdal, rgeos, stringr, truncnorm, abind, MCMCvis, Metrics, reshape2, rjags, runjags
 Depends: doParallel, foreach, parallel, R (>= 2.10)
 Suggests: knitr, rmarkdown
