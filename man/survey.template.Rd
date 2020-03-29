@@ -6,29 +6,31 @@
 \title{Generalized template for travel survey data}
 \format{a data frame with empty columns
 \describe{
+  \item{date_start}{date: beginning of the time interval of the survey for each observation}
+  \item{date_stop}{date: end of the time interval of the survey for each observation}
   \item{indiv_id}{integer: unique individual identifier}
   \item{indiv_age}{numeric: age of participant}
   \item{indiv_sex}{logical: gender of perticipant}
   \item{indiv_type}{factor: if individual participants belong to different groups}
-  \item{orig_adm0}{character: name of highest administration level of origin location (country)}
-  \item{orig_adm1}{character: name of administration level 1 of origin location}
-  \item{orig_adm2}{character: name of administration level 2 of origin location}
-  \item{orig_adm3}{character: name of administration level 3 of origin location}
-  \item{orig_adm4}{character: name of administration level 4 of origin location}
-  \item{orig_adm5}{character: name of administration level 5 of origin location}
+  \item{orig_adm0}{character: name of highest administration level of origin location (e.g. Country)}
+  \item{orig_adm1}{character: name of administration level 1 of origin location (e.g. Division, State)}
+  \item{orig_adm2}{character: name of administration level 2 of origin location (e.g. District, County)}
+  \item{orig_adm3}{character: name of administration level 3 of origin location (e.g. Sub-district, Province)}
+  \item{orig_adm4}{character: name of administration level 4 of origin location (e.g. City, Municipality)}
+  \item{orig_adm5}{character: name of administration level 5 of origin location (e.g. Town, Village, Community, Ward)}
   \item{orig_type}{character: administrative type for the origin location (e.g. sub-district, community vs town, or urban vs rural)}
-  \item{orig_x}{numeric: longitude of origin location in decimal degrees}
-  \item{orig_y}{numeric: latitude of origin location in decimal degrees}
+  \item{orig_x}{numeric: longitude of origin location centroid in decimal degrees (centroid of smallest admin unit)}
+  \item{orig_y}{numeric: latitude of origin location centroid in decimal degrees (centroid of smallest admin unit)}
   \item{orig_pop}{numeric: population size of lowest administrative unit for origin location}
   \item{dest_adm0}{character: name of highest administration level of destination location (country)}
-  \item{dest_adm1}{character: name of administration level 1 of destination location}
-  \item{dest_adm2}{character: name of administration level 2 of destination location}
-  \item{dest_adm3}{character: name of administration level 3 of destination location}
-  \item{dest_adm4}{character: name of administration level 4 of destination location}
-  \item{dest_adm5}{character: name of administration level 5 of destination location}
+  \item{dest_adm1}{character: name of administration level 1 of destination location (e.g. Division)}
+  \item{dest_adm2}{character: name of administration level 2 of destination location (e.g. District)}
+  \item{dest_adm3}{character: name of administration level 3 of destination location (e.g. Sub-district)}
+  \item{dest_adm4}{character: name of administration level 4 of destination location (e.g. Council, Municipality)}
+  \item{dest_adm5}{character: name of administration level 5 of destination location (e.g. Town, Village, Community, Ward)}
   \item{dest_type}{character: administrative type for the destination location (e.g. sub-district, community vs town, or urban vs rural)}
-  \item{dest_x}{numeric: longitude of destination location in decimal degrees}
-  \item{dest_y}{numeric: latitude of destination location in decimal degrees}
+  \item{dest_x}{numeric: longitude of destination location in decimal degrees (centroid of smallest admin unit)}
+  \item{dest_y}{numeric: latitude of destination location centroid in decimal degrees (centroid of smallest admin unit)}
   \item{dest_pop}{numeric: population size of lowest administrative unit for destination location}
   \item{trips}{numeric: total number of trips individual made from origin to destination during time span of travel survey}
   }}
@@ -36,8 +38,70 @@
 survey.template
 }
 \description{
-This is a template data frame providing a general structure for travel survey data that integrates with data synthesis and 
-modeling functions.
+This is a template data frame provides a general structure for travel survey data that integrates with data synthesis and 
+modeling functions. Stays are included in this data frame, where origin and destination are the same and trips are set to NA. 
+Note that models fitted and then extrapolated using other data assume that the same method for defining population size is used throughout.
+}
+\examples{
+### Travel within the same district ###
+trip <- survey.template
+n <- 10 # Add some observations
+trip[1:n,] <- NA
+
+# Participant info
+trip$indiv_id <- 1:n
+trip$indiv_age <- round(runif(n, 5, 80))
+trip$indiv_sex <- rbinom(n, 1, 0.5)
+
+# Origin info
+trip$orig_adm0 <- 'Bangladesh'
+trip$orig_adm1 <- 'Dhaka'
+trip$orig_adm2 <- 'Dhaka'
+trip$orig_adm3 <- 'Manda'
+trip$orig_type <- 'Upazila' # Type of admin unit for lowest admin level
+trip$orig_x <- rnorm(n, 100, 5)
+trip$orig_y <- rnorm(n, 20, 2)
+trip$orig_pop <- rpois(n, 10000)
+
+# Destination info
+trip$dest_adm0 <- 'Bangladesh'
+trip$dest_adm1 <- 'Dhaka'
+trip$dest_adm2 <- 'Dhaka'
+trip$dest_adm3 <- 'Adabor'
+trip$dest_type <- 'Upazila' # Type of admin unit for lowest admin level
+trip$dest_x <- rnorm(n, 100, 5)
+trip$dest_y <- rnorm(n, 20, 2)
+trip$dest_pop <- rpois(n, 5000)
+
+# Number of reported trips
+trip$trips <- rpois(n, 10)
+
+head(trip)
+
+
+
+
+### Stays in home location ###
+stay <- survey.template
+n <- 6 # add some observations
+stay[1:n,] <- NA
+
+# Participant info
+stay$indiv_id <- 1:n
+stay$indiv_age <- round(runif(n, 5, 80))
+stay$indiv_sex <- rbinom(n, 1, 0.5)
+
+# Origin info
+stay$orig_adm0 <- 'Bangladesh'
+stay$orig_adm1 <- 'Dhaka'
+stay$orig_adm2 <- 'Dhaka'
+stay$orig_adm3 <- 'Manda'
+stay$orig_type <- 'Upazila' # Type of admin unit for lowest admin level
+stay$orig_x <- rnorm(n, 100, 5)
+stay$orig_y <- rnorm(n, 20, 2)
+stay$orig_pop <- rpois(n, 10000)
+
+head(stay)
 }
 \author{
 John Giles

@@ -1,4 +1,7 @@
 survey.template <- data.frame(
+     date_start=as.Date(character()),
+     date_stop=as.Date(character()),
+     date_span=as.difftime(numeric(), units='days'),
      indiv_id=integer(),      # unique individual identifier
      indiv_age=numeric(),     # Age of participant
      indiv_sex=logical(),     # Gender of perticipant
