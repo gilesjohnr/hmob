@@ -3118,135 +3118,13 @@ sim.gravity.duration <- function(
 
 
 
-
-##' Fit gravity model to movement matrix
-##' 
-##' This function fits gravity model parameters to a supplied movement matrix using Bayesian MCMC inference. The function defines the model and serves as a wrapper for the \code{\link{run.jags}}
-##' function in the \code{\link{runjags}} package. Gravity model formula:
-##' \deqn{
-##'     \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
-##' }
-##' 
-##' @param M named matrix of trip counts among all \eqn{ij} location pairs
-##' @param D named matrix of distances among all \eqn{ij} location pairs
-##' @param N named vector of population sizes for each location
-##' @param n.chain number of MCMC sampling chains
-##' @param n.adapt number of adaptive iterations
-##' @param n.burn number of iterations to discard before sampling of chains begins (burn in)
-##' @param n.samp number of iterations to sample each chain
-##' @param n.thin interval to thin samples 
-##' @param parallel logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)
-##' 
-##' @return a runjags model object conataining fitted gravity model paramters
-##' 
-##' @author John Giles
-##' 
-##' @example R/examples/fit_gravity.R
-##'
-##' @family model
-##' @family gravity
-##' 
-##' @export
-##' 
-
-fit.gravity <- function(
-        M,   
-        D,  
-        N,  
-        n.chain=4,
-        n.adapt=1000,
-        n.burn=5000,
-        n.samp=5000,
-        n.thin=1,
-        parallel=FALSE
-) {
-        
-        if (!(identical(dim(M)[1], dim(D)[1], length(N)))) stop('Dimensions of input data must match')
-        if ( !(identical(dimnames(M)[[1]], dimnames(D)[[1]])) | !(identical(dimnames(M)[[1]], names(N))) ) {
-                warning('Dimension names of input data do not match.')
-        }
-        
-        jags.data <- list(
-                M=M,                     
-                D=D,                     
-                N=N,                     
-                n.districts=dim(M)[1]  
-        )
-        
-        gravity.model <- "
-          model {     
-               
-               # Poisson likelihood
-               for (i in 1:n.districts) {
-                    for (j in 1:n.districts) {
-                         
-                         M[i,j] ~ dpois(pi[i,j]*N[i]) 
-                    }
-                    
-                    pi[i,1:n.districts] <- c[i,]/sum(c[i,])
-               }
-               
-               for (i in 1:n.districts) {
-                    for (j in 1:n.districts) {
-                         
-                         # Gravity model
-                         c[i,j] <- ifelse(
-                              i == j, 
-                              0,
-                              exp(log(theta) + (omega.1*log(N[i]) + omega.2*log(N[j]) - log( f.d[i,j] )))
-                         )
-                         
-                         # Dispersal kernel
-                         f.d[i,j] <- D[i,j]^gamma
-                    }
-               }
-               
-               ### Priors ###
-               theta ~ dgamma(1, 0.05)
-               omega.1 ~ dgamma(1, 0.05)
-               omega.2 ~ dgamma(1, 0.05)
-               gamma ~ dgamma(1, 0.05)
-               
-          }"
-        
-        params <- c('omega.1', 'omega.2', 'theta', 'gamma')
-        
-        init.list <- replicate(n.chain, 
-                               list(.RNG.name='lecuyer::RngStream',
-                                    .RNG.seed= sample(1:1e6, 1)), 
-                               simplify=FALSE)
-        
-        if (parallel == TRUE) {
-                
-                method <- 'parallel'
-                
-        } else if (parallel == FALSE) {
-                
-                method <- 'rjags'
-        }
-        
-        runjags::run.jags(model=gravity.model,
-                          data=jags.data,
-                          monitor=params,
-                          n.chains=n.chain,
-                          adapt=n.adapt,
-                          burnin=n.burn,
-                          sample=n.samp,
-                          thin=n.thin,
-                          inits=init.list,
-                          modules=c('lecuyer'),
-                          method=method,
-                          summarise=FALSE)
-}
-
-
 ##' Build distance matrix from XY coordinates
 ##' 
 ##' This function builds the pairwise distance matrix from vectors of XY coordinates and associated names.
 ##' 
 ##' @param x vector giving X coordinates
 ##' @param y vector giving Y coordinates
-##' @param id vector of names for each location (default=NULL)
+##' @param id vector of names for each location
 
 ##' @return a named matrix of pairwise distances among locations
 ##' 
@@ -3261,22 +3139,22 @@ fit.gravity <- function(
 
 get.distance.matrix <- function(x,   # x coord
                                 y,   # y coord 
-                                id=NULL   # name associated with each element
+                                id   # name associated with each element
 ) {
      xy <- cbind(x, y)
      window <- spatstat::bounding.box.xy(xy)
      out <- spatstat::pairdist(spatstat::as.ppp(xy, window, check=FALSE))
-     if (!is.null(id)) dimnames(out) <- list(origin=id, destination=id)
-     out
+     dimnames(out) <- list(origin=id, destination=id)
+     out[order(dimnames(out)$origin), order(dimnames(out)$destination)]
 }
 
-##' Get cross distances between two sets of points
+##' Get distance between two points for one observation
 ##' 
-##' Takes the XY coordinates of two sets locations and returns cross distance for all unique combinations.
+##' Takes X and Y coordinates of two locations and returns cross distance for all entries.
 ##' 
 ##' @param xy1 two column matrix of XY coordinates for first group
 ##' @param xy2 two column matrix of XY coordinates for second group
-##' @param id2 optional names for first group
+##' @param id1 optional names for first group
 ##' @param id2 optional names for second group
 ##' 
 ##' @return numeric scalar or matrix
@@ -3311,4 +3189,356 @@ get.crossdist <- function(xy1,
      if (!is.null(id2)) out <- out[,order(dimnames(out)$destination)]
      
      out
+}
+
+
+##' Get sparse mobility matrix
+##' 
+##' Takes X and Y coordinates of two locations and returns cross distance for all entries.
+##' 
+##' @param orig vector of origin names
+##' @param dest vector of destination names
+##' @param value vector of observed values for each origin/destination pair
+##' @param missing.obs filler value for missing observations (default=NA)
+##' 
+##' @return named numeric matrix
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_sparse_mob_matrix.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+get.sparse.mob.matrix <- function(orig,
+                                  dest,
+                                  value,
+                                  missing.obs='NA'
+){
+     
+     fac <- factor(sort(unique(c(orig, dest))))
+     
+     m <- formatSpMatrix(
+          sparseMatrix(i=as.integer(factor(orig, levels=levels(fac))), 
+                       j=as.integer(factor(dest, levels=levels(fac))), 
+                       x=value), 
+          zero.print=missing.obs
+     )
+     
+     suppressWarnings(class(m) <- "numeric")
+     dimnames(m) <- list(origin=levels(fac), destination=levels(fac))
+     m[order(dimnames(m)$origin), order(dimnames(m)$destination)]
+}
+
+
+##' Fit gravity model to movement matrix
+##' 
+##' This function fits gravity model parameters to a supplied movement matrix using Bayesian MCMC inference. The function defines the model and serves as a wrapper for the \code{\link{run.jags}}
+##' function in the \code{\link{runjags}} package. Gravity model formula:
+##' \deqn{
+##'     \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
+##' }
+##' 
+##' @param M named matrix of trip counts among all \eqn{ij} location pairs
+##' @param D named matrix of distances among all \eqn{ij} location pairs
+##' @param N named vector of population sizes for all locations (either N or both N_orig and N_dest must be supplied)
+##' @param N_orig named vector of population sizes for each origin 
+##' @param N_dest named vector of population sizes for each destination.
+##' @param n.chain number of MCMC sampling chains
+##' @param n.adapt number of adaptive iterations
+##' @param n.burn number of iterations to discard before sampling of chains begins (burn in)
+##' @param n.samp number of iterations to sample each chain
+##' @param n.thin interval to thin samples 
+##' @param parallel logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)
+##' 
+##' @return a runjags model object conataining fitted gravity model paramters
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/fit_gravity.R
+##'
+##' @family model
+##' @family gravity
+##' 
+##' @export
+##' 
+
+fit.gravity <- function(
+     M,   
+     D, 
+     N=NULL,
+     N_orig=NULL,
+     N_dest=NULL,
+     n.chain=4,
+     n.adapt=1000,
+     n.burn=1000,
+     n.samp=1000,
+     n.thin=1,
+     prior=FALSE,
+     parallel=FALSE
+) {
+     
+     # Check data
+     if (all(!is.null(N), is.null(N_orig), is.null(N_dest))) {
+          N_dest <- N_orig <- N
+     } else if (all(is.null(N), !is.null(N_orig), is.null(N_dest))) {
+          N_dest <- N_orig
+     } 
+     
+     if (!(identical(dim(M)[1], dim(D)[1], length(N_orig)))) stop('Dimensions of input data must match')
+     if (!(identical(dim(M)[2], dim(D)[2], length(N_dest)))) stop('Dimensions of input data must match')
+     
+     if ( !(identical(dimnames(M)[[1]], dimnames(D)[[1]])) | !(identical(dimnames(M)[[1]], names(N_orig))) ) {
+          stop('Dimension names of input data do not match.')
+     }
+     
+     if ( !(identical(dimnames(M)[[2]], dimnames(D)[[2]])) | !(identical(dimnames(M)[[2]], names(N_dest))) ) {
+          stop('Dimension names of input data do not match.')
+     }
+     
+     message(
+          paste('::Fitting gravity model for', 
+                dim(M)[1], 
+                'origins and',
+                dim(M)[2], 
+                'destinations::',
+                sep=' ')
+     )
+     
+     if (!all(unlist(lapply(list(M, N_orig, N_dest), is.integer)))) {
+          M[,] <- as.integer(M)
+          N_orig[] <- as.integer(N_orig)
+          N_dest[] <- as.integer(N_dest)
+     }
+     
+     if (is.null(prior)) { 
+          
+          message('Using uniformative priors')
+          prior <- c(1, 0.05)
+          prior <- list(theta=prior,
+                        omega_1=prior,
+                        omega_2=prior,
+                        gamma=prior)
+          
+     } else {
+          
+          message('Using supplied informative priors')
+     }
+     
+     jags.data <- list(
+          M=M,                     
+          D=D,                     
+          N_orig=N_orig,
+          N_dest=N_dest,
+          prior_theta=prior$theta,
+          prior_omega_1=prior$omega_1,
+          prior_omega_2=prior$omega_2,
+          prior_gamma=prior$gamma
+     )
+     
+     jags.model <- "
+     model {     
+          
+          # Poisson likelihood
+          for (i in 1:length(N_orig)) {
+               for (j in 1:length(N_dest)) {
+                    
+                    M[i,j] ~ dpois(pi[i,j]*N_orig[i]) 
+               }
+               
+               pi[i,1:length(N_dest)] <- c[i,]/sum(c[i,])
+          }
+          
+          for (i in 1:length(N_orig)) {
+               for (j in 1:length(N_dest)) {
+                    
+                    # Gravity model
+                    c[i,j] <- ifelse(
+                         i == j, 
+                         0,
+                         exp(log(theta) + (omega_1*log(N_dest[i]) + omega_2*log(N_orig[j]) - log( f.d[i,j] )))
+                    )
+                    
+                    # Dispersal kernel
+                    f.d[i,j] <- D[i,j]^gamma
+               }
+          }
+          
+          ### Priors ###
+          theta ~ dgamma(prior_theta[1], prior_theta[2])
+          omega_1 ~ dgamma(prior_omega_1[1], prior_omega_1[2])
+          omega_2 ~ dgamma(prior_omega_2[1], prior_omega_2[2])
+          gamma ~ dgamma(prior_gamma[1], prior_gamma[2])
+          
+     }"
+     
+     
+     params <- c('omega_1', 'omega_2', 'theta', 'gamma')
+     
+     init.list <- replicate(n.chain, 
+                            list(.RNG.name='lecuyer::RngStream',
+                                 .RNG.seed= sample(1:1e6, 1)), 
+                            simplify=FALSE)
+     
+     if (parallel == TRUE) {
+          
+          method <- 'parallel'
+          
+     } else if (parallel == FALSE) {
+          
+          method <- 'rjags'
+     }
+     
+     runjags::run.jags(model=jags.model,
+                       data=jags.data,
+                       monitor=params,
+                       n.chains=n.chain,
+                       adapt=n.adapt,
+                       burnin=n.burn,
+                       sample=n.samp,
+                       thin=n.thin,
+                       inits=init.list,
+                       modules=c('lecuyer'),
+                       method=method,
+                       summarise=FALSE)
+}
+
+
+
+##' Estimate probability of travelling outside origin
+##' 
+##' This function fits a hierarchical model that estimates the probability an individual travels outside their home location
+##' within the time period of the survey (tau). The model estimates both the overall population-level probability of travel (tau_pop) and 
+##' the origin-level probability of travel (tau_i). Further this method is designed for sparse observations that typically result from 
+##' travel survey data, where unobserved routes of travel regress to the population mean.
+##' 
+##' @param V_travel named vector of total number of people that reported travelling outside their home location
+##' @param V_tot named vector of the total number of individuals in travel survey for each location
+##' @param n.chain number of MCMC sampling chains
+##' @param n.adapt number of adaptive iterations
+##' @param n.burn number of iterations to discard before sampling of chains begins (burn in)
+##' @param n.samp number of iterations to sample each chain
+##' @param n.thin interval to thin samples 
+##' @param parallel logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)
+##' 
+##' @return dataframe giving input data along with estimates of travel probability for each location
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/fit_prob_travel.R
+##'
+##' @family model
+##' @family travel survey
+##' 
+##' @export
+##' 
+
+fit.prob.travel <- function(
+     V_travel,
+     V_tot,
+     n.chain=4,
+     n.adapt=1000,
+     n.burn=1000,
+     n.samp=1000,
+     n.thin=1,
+     parallel=FALSE
+) {
+     
+     # Check data
+     if (!(identical(length(V_travel), length(V_tot)))) stop('Dimensions of input data must match')
+     if ( !(identical(names(V_travel), names(V_tot))) ) stop('Dimension names of input data do not match.')
+     if (is.null(names(V_travel))) stop('Vectors are not named.')
+     
+     # Work around for NAs
+     na.fix <- any(is.na(V_travel)) | any(is.na(V_tot))
+     if (na.fix) {
+          sel <- complete.cases(cbind(V_travel, V_tot))
+     } else {
+          sel <- seq_along(V_travel)
+     }
+     
+     jags.data <- list(
+          V_travel=V_travel[sel],
+          V_tot=V_tot[sel]
+     )
+     
+     jags.model <- "
+     model {     
+          
+          # Origin-level probability of travel
+          for (j in 1:length(V_travel)) {
+               
+               V_travel[j] ~ dbin(tau[j], V_tot[j])
+          }
+          
+          # Population-level hyper-prior
+          tau_pop ~ dbeta(1, 1) 
+          
+          # Origin-level priors
+          for (k in 1:length(V_travel)) {
+               
+               tau[k] ~ dnorm(tau_pop, 10) T(0,1)
+          }
+     }"
+     
+     params <- c('tau_pop', 'tau')
+     
+     init.list <- replicate(n.chain, 
+                            list(.RNG.name='lecuyer::RngStream',
+                                 .RNG.seed= sample(1:1e6, 1)), 
+                            simplify=FALSE)
+     
+     if (parallel == TRUE) {
+          method <- 'parallel'
+     } else if (parallel == FALSE) {
+          method <- 'rjags'
+     }
+     
+     mod <- summary(
+          runjags::run.jags(model=jags.model,
+                            data=jags.data,
+                            monitor=params,
+                            n.chains=n.chain,
+                            adapt=n.adapt,
+                            burnin=n.burn,
+                            sample=n.samp,
+                            thin=n.thin,
+                            inits=init.list,
+                            modules=c('lecuyer'),
+                            method=method,
+                            summarise=FALSE)
+     )
+     
+     if (na.fix) {
+          
+          # Merge with missing obs
+          out <- merge(
+               data.frame(orig_id=names(V_travel),
+                          travel=V_travel,
+                          total=V_tot,
+                          row.names=NULL),
+               data.frame(orig_id=names(V_travel[sel]),
+                          travel=V_travel[sel],
+                          total=V_tot[sel],
+                          mod[-1,],
+                          row.names=NULL),
+               all=T
+          )
+          
+          # Set missing obs to population mean
+          for(i in which(!sel)) out[i, -(1:3)] <- mod['tau_pop',]
+          return(out)
+          
+     } else {
+          
+          return(
+               data.frame(orig_id=names(V_travel),
+                          travel=V_travel,
+                          total=V_tot,
+                          mod[-1,],
+                          row.names=NULL)
+          )
+     }
 }

@@ -82,6 +82,7 @@ Other data synthesis:
 \code{\link{get.district.pop}()},
 \code{\link{get.duration.counts}()},
 \code{\link{get.holidays}()},
+\code{\link{get.sparse.mob.matrix}()},
 \code{\link{get.subsamp}()},
 \code{\link{mob.data.array}()},
 \code{\link{parse.longform}()}

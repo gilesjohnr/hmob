@@ -4,14 +4,14 @@
 \alias{get.distance.matrix}
 \title{Build distance matrix from XY coordinates}
 \usage{
-get.distance.matrix(x, y, id = NULL)
+get.distance.matrix(x, y, id)
 }
 \arguments{
 \item{x}{vector giving X coordinates}
 
 \item{y}{vector giving Y coordinates}
 
-\item{id}{vector of names for each location (default=NULL)}
+\item{id}{vector of names for each location}
 }
 \value{
 a named matrix of pairwise distances among locations
@@ -44,6 +44,7 @@ Other data synthesis:
 \code{\link{get.district.pop}()},
 \code{\link{get.duration.counts}()},
 \code{\link{get.holidays}()},
+\code{\link{get.sparse.mob.matrix}()},
 \code{\link{get.subsamp}()},
 \code{\link{get.xy.counts}()},
 \code{\link{mob.data.array}()},

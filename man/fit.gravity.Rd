@@ -7,12 +7,15 @@
 fit.gravity(
   M,
   D,
-  N,
+  N = NULL,
+  N_orig = NULL,
+  N_dest = NULL,
   n.chain = 4,
   n.adapt = 1000,
-  n.burn = 5000,
-  n.samp = 5000,
+  n.burn = 1000,
+  n.samp = 1000,
   n.thin = 1,
+  prior = FALSE,
   parallel = FALSE
 )
 }
@@ -21,7 +24,11 @@ fit.gravity(
 
 \item{D}{named matrix of distances among all \eqn{ij} location pairs}
 
-\item{N}{named vector of population sizes for each location}
+\item{N}{named vector of population sizes for all locations (either N or both N_orig and N_dest must be supplied)}
+
+\item{N_orig}{named vector of population sizes for each origin}
+
+\item{N_dest}{named vector of population sizes for each destination.}
 
 \item{n.chain}{number of MCMC sampling chains}
 
@@ -70,6 +77,9 @@ summary(out)
 
 }
 \seealso{
+Other model: 
+\code{\link{fit.prob.travel}()}
+
 Other gravity: 
 \code{\link{sim.gravity.duration}()},
 \code{\link{sim.gravity}()}

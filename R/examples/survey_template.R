@@ -42,6 +42,7 @@ trip$trips <- rpois(n, 10)
 head(trip)
 
 
+
 #-----------------------
 # Stays in home location
 #-----------------------
@@ -74,9 +75,11 @@ stay$trips <- NA
 
 head(stay)
 
-
+# Combine
 survey_data <- dplyr::full_join(trip, stay)
 head(survey_data)
+
+
 
 #----------------------------------------
 # Dataset with which to extrapolate model

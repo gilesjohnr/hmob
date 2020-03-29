@@ -41,6 +41,7 @@ Other data synthesis:
 \code{\link{get.district.names.xy}()},
 \code{\link{get.district.pop}()},
 \code{\link{get.duration.counts}()},
+\code{\link{get.sparse.mob.matrix}()},
 \code{\link{get.subsamp}()},
 \code{\link{get.xy.counts}()},
 \code{\link{mob.data.array}()},

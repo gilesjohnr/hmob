@@ -2,7 +2,7 @@
 % Please edit documentation in R/hmobfuncs.R
 \name{get.crossdist}
 \alias{get.crossdist}
-\title{Get cross distances between two sets of points}
+\title{Get distance between two points for one observation}
 \usage{
 get.crossdist(xy1, xy2, id1 = NULL, id2 = NULL)
 }
@@ -11,13 +11,15 @@ get.crossdist(xy1, xy2, id1 = NULL, id2 = NULL)
 
 \item{xy2}{two column matrix of XY coordinates for second group}
 
+\item{id1}{optional names for first group}
+
 \item{id2}{optional names for second group}
 }
 \value{
 numeric scalar or matrix
 }
 \description{
-Takes the XY coordinates of two sets locations and returns cross distance for all unique combinations.
+Takes X and Y coordinates of two locations and returns cross distance for all entries.
 }
 \examples{
 # Some XY coords in decimal degrees
@@ -68,6 +70,7 @@ Other data synthesis:
 \code{\link{get.district.pop}()},
 \code{\link{get.duration.counts}()},
 \code{\link{get.holidays}()},
+\code{\link{get.sparse.mob.matrix}()},
 \code{\link{get.subsamp}()},
 \code{\link{get.xy.counts}()},
 \code{\link{mob.data.array}()},
