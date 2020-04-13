@@ -1,7 +1,7 @@
 ##' Generalized template for travel survey data
 ##' 
 ##' This template data frame provides a general structure for travel survey data that integrates with data synthesis and 
-##' modeling functions. Stays are included in this data frame, where origin and destination are the same and trips are set to NA. 
+##' modeling functions. Stays (indivduals reported as not traveling outside home location) are included in this data frame, where origin and destination are the same and trips are set to NA. 
 ##' Note that models fitted and then extrapolated using other data assume that the same method for defining population size is used throughout.
 ##' Either dates or time span must be filled.
 ##' 

@@ -3004,7 +3004,7 @@ sim.gravity <- function(
                     
                } else {
                     
-                    f.d[i,j] <- (D[i,j]^gamma) + 1e-6
+                    f.d[i,j] <- (D[i,j]^gamma)
                     
                     x[i,j] <- exp(log(theta) + (omega.1*log(N[i]) + omega.2*log(N[j]) - log(f.d[i,j])))
                }          
@@ -3251,6 +3251,7 @@ get.sparse.mob.matrix <- function(orig,
 ##' @param n.burn number of iterations to discard before sampling of chains begins (burn in)
 ##' @param n.samp number of iterations to sample each chain
 ##' @param n.thin interval to thin samples 
+##' @param prior a list of priors for model parameters. If NULL (default) the model uses uniformative priors
 ##' @param parallel logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)
 ##' 
 ##' @return a runjags model object conataining fitted gravity model paramters
@@ -3276,7 +3277,7 @@ fit.gravity <- function(
      n.burn=1000,
      n.samp=1000,
      n.thin=1,
-     prior=FALSE,
+     prior=NULL,
      parallel=FALSE
 ) {
      

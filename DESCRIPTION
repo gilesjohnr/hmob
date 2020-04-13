@@ -1,7 +1,7 @@
 Package: hmob
 Type: Package
 Title: Tools for analyzing human mobility data
-Version: 0.1.7
+Version: 0.1.8
 Date: 2019-01-22
 Author: John R Giles
 Maintainer: John R Giles <giles@jhu.edu>

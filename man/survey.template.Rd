@@ -40,7 +40,7 @@ survey.template
 }
 \description{
 This template data frame provides a general structure for travel survey data that integrates with data synthesis and 
-modeling functions. Stays are included in this data frame, where origin and destination are the same and trips are set to NA. 
+modeling functions. Stays (indivduals reported as not traveling outside home location) are included in this data frame, where origin and destination are the same and trips are set to NA. 
 Note that models fitted and then extrapolated using other data assume that the same method for defining population size is used throughout.
 Either dates or time span must be filled.
 }
@@ -133,7 +133,7 @@ head(survey_data)
 #----------------------------------------
 
 pred <- survey.template
-n <- 3 # Add some observations
+n <- 6 # Add some observations
 pred[1:n,] <- NA
 
 # Time span of the interval over which to extrapolate the fitted model
@@ -146,16 +146,7 @@ pred$orig_adm2 <- LETTERS[1:n]
 pred$orig_type <- 'District' # Type of admin unit for lowest admin level
 pred$orig_x <- rnorm(n, 100, 5)
 pred$orig_y <- rnorm(n, 20, 2)
-pred$orig_pop <- rpois(n, 2e+06)
-
-# Destination info
-pred$dest_adm0 <- 'A'
-pred$dest_adm1 <- 'A'
-pred$dest_adm2 <- LETTERS[(n+1):(n*2)]
-pred$dest_type <- 'District' # Type of admin unit for lowest admin level
-pred$dest_x <- rnorm(n, 100, 5)
-pred$dest_y <- rnorm(n, 20, 2)
-pred$dest_pop <- rpois(n, 5e+05)
+pred$orig_pop <- rpois(n, 1e+05)
 
 # Number of reported trips (unobserved for extrapolation data)
 trip$trips <- NA 

@@ -15,7 +15,7 @@ fit.gravity(
   n.burn = 1000,
   n.samp = 1000,
   n.thin = 1,
-  prior = FALSE,
+  prior = NULL,
   parallel = FALSE
 )
 }
@@ -39,6 +39,8 @@ fit.gravity(
 \item{n.samp}{number of iterations to sample each chain}
 
 \item{n.thin}{interval to thin samples}
+
+\item{prior}{a list of priors for model parameters. If NULL (default) the model uses uniformative priors}
 
 \item{parallel}{logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)}
 }
