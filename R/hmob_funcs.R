@@ -3192,6 +3192,7 @@ get.crossdist <- function(xy1,
 }
 
 
+
 ##' Get sparse mobility matrix
 ##' 
 ##' Takes X and Y coordinates of two locations and returns cross distance for all entries.
@@ -3218,12 +3219,16 @@ get.sparse.mob.matrix <- function(orig,
                                   missing.obs='NA'
 ){
      
+     if (is.factor(orig)) orig <- as.character(orig)
+     if (is.factor(dest)) dest <- as.character(dest)
+     
      fac <- factor(sort(unique(c(orig, dest))))
      
-     m <- formatSpMatrix(
-          sparseMatrix(i=as.integer(factor(orig, levels=levels(fac))), 
-                       j=as.integer(factor(dest, levels=levels(fac))), 
-                       x=value), 
+     m <- Matrix::formatSpMatrix(
+          Matrix::sparseMatrix(i=as.integer(factor(orig, levels=levels(fac))), 
+                               j=as.integer(factor(dest, levels=levels(fac))), 
+                               x=value,
+                               dims=rep(length(fac), 2)), 
           zero.print=missing.obs
      )
      
@@ -3233,313 +3238,420 @@ get.sparse.mob.matrix <- function(orig,
 }
 
 
-##' Fit gravity model to movement matrix
+##' Get unique origin and destination names
 ##' 
-##' This function fits gravity model parameters to a supplied movement matrix using Bayesian MCMC inference. The function defines the model and serves as a wrapper for the \code{\link{run.jags}}
-##' function in the \code{\link{runjags}} package. Gravity model formula:
-##' \deqn{
-##'     \theta * ( N_i^\omega_1 N_j^\omega_2 / f(d_ij) )
-##' }
+##' This function builds unique character string identifiers for all origins and destinations. 
 ##' 
-##' @param M named matrix of trip counts among all \eqn{ij} location pairs
-##' @param D named matrix of distances among all \eqn{ij} location pairs
-##' @param N named vector of population sizes for all locations (either N or both N_orig and N_dest must be supplied)
-##' @param N_orig named vector of population sizes for each origin 
-##' @param N_dest named vector of population sizes for each destination.
-##' @param n.chain number of MCMC sampling chains
-##' @param n.adapt number of adaptive iterations
-##' @param n.burn number of iterations to discard before sampling of chains begins (burn in)
-##' @param n.samp number of iterations to sample each chain
-##' @param n.thin interval to thin samples 
-##' @param prior a list of priors for model parameters. If NULL (default) the model uses uniformative priors
-##' @param parallel logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)
+##' @param data generalized data frame described in \code{\link{travel.survey}}
+##' @param adm.start highest administrative level to include in unique names (default = NULL, which uses highest observed in the data)
+##' @param adm.stop lowest administrative level to include in unique names (default = NULL, which uses lowest observed in the data)
+##' @param name.class character indicating whether unique names should be either a unique character string (\code{name.class = "character"}) or a unique integer code (\code{name.class = "numeric"}) 
 ##' 
-##' @return a runjags model object conataining fitted gravity model paramters
+##' @return two column dataframe containing unique names
 ##' 
 ##' @author John Giles
 ##' 
-##' @example R/examples/fit_gravity.R
+##' @example R/examples/get_unique_names.R
 ##'
-##' @family model
-##' @family gravity
+##' @family utility
 ##' 
 ##' @export
 ##' 
 
-fit.gravity <- function(
-     M,   
-     D, 
-     N=NULL,
-     N_orig=NULL,
-     N_dest=NULL,
-     n.chain=4,
-     n.adapt=1000,
-     n.burn=1000,
-     n.samp=1000,
-     n.thin=1,
-     prior=NULL,
-     parallel=FALSE
+get.unique.names <- function(data,
+                             adm.start=NULL,
+                             adm.stop=NULL,
+                             name.class="character"
 ) {
      
-     # Check data
-     if (all(!is.null(N), is.null(N_orig), is.null(N_dest))) {
-          N_dest <- N_orig <- N
-     } else if (all(is.null(N), !is.null(N_orig), is.null(N_dest))) {
-          N_dest <- N_orig
+     if (length(unique(data$date_span)) > 1) warning('Data contain multiple date spans')
+     
+     sel <- grep('orig_adm', colnames(data))
+     if (is.null(adm.start)) adm.start <- 0
+     if (is.null(adm.stop)) adm.stop <- length(sel)-1
+     sel <- sel[order(colnames(data)[sel])]
+     sel_orig <- sel[(adm.start+1):(adm.stop+1)]
+     
+     sel <- grep('dest_adm', colnames(data))
+     if (is.null(adm.start)) adm.start <- 0
+     if (is.null(adm.stop)) adm.stop <- length(sel)-1
+     sel <- sel[order(colnames(data)[sel])]
+     sel_dest <- sel[(adm.start+1):(adm.stop+1)]
+     
+     if (name.class == "character") {
+          
+          orig_id <- apply(data[,sel_orig], 1, function(x) paste(x[!is.na(x)], collapse='_'))
+          dest_id <- apply(data[,sel_dest], 1, function(x) paste(x[!is.na(x)], collapse='_'))
+          
+          fac <- factor(c(orig_id, dest_id))
+          orig_id <- factor(orig_id, levels=levels(fac))
+          dest_id <- factor(dest_id, levels=levels(fac))
+          
+     } else if (name.class == "numeric") {
+          
+          pads <- data.frame(
+               adm.level=0:6,
+               n=c(3, # admin0 
+                   3, # admin1 
+                   3, # admin2 
+                   4, # admin3 
+                   5, # admin4
+                   5, # admin5
+                   5) # admin6
+          )
+          
+          for (i in seq_along(sel_orig)) {
+               
+               n.pad <- pads$n[(adm.start+1) + (i-1)]
+               fac <- factor(sort(unique(c(data[,sel_orig[i]], data[,sel_dest[i]]))))
+               
+               data[,sel_orig[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_orig[i]], levels=levels(fac))), 
+                                                      width=n.pad,
+                                                      side='left', 
+                                                      pad="0")
+               
+               data[,sel_dest[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_dest[i]], levels=levels(fac))), 
+                                                      width=n.pad,
+                                                      side='left', 
+                                                      pad="0")
+          } 
+          
+          orig_id <- apply(data[,sel_orig], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
+          dest_id <- apply(data[,sel_dest], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
+          
+     } else {
+          
+          stop('name.class argument must be either "character" or "numeric"')
+     }
+     
+     
+     data.frame(orig_id, dest_id)
+}
+
+
+
+
+
+##' Get unique coordinates
+##' 
+##' This function returns the coordinates for all unique origins and/or destinations in supplied data.
+##' 
+##' @param data generalized data frame described in \code{\link{travel.survey}} or derivative thereof
+##' @param orig logical indicating whether to include unique coordinates from origin locations (default=TRUE)
+##' @param dest logical indicating whether to include unique coordinates from destination locations (default=TRUE)
+##' 
+##' @return three column dataframe containing unique coordinates and location names
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_unique_coords.R
+##'
+##' @family utility
+##' 
+##' @export
+##' 
+
+get.unique.coords <- function(data,
+                              orig=TRUE,
+                              dest=TRUE
+) {
+     
+     if (!all(c('orig_id', 'dest_id') %in% colnames(data))) {
+          
+          data <- get.unique.names(data)
+          warning('Added missing unique location names.')
      } 
      
-     if (!(identical(dim(M)[1], dim(D)[1], length(N_orig)))) stop('Dimensions of input data must match')
-     if (!(identical(dim(M)[2], dim(D)[2], length(N_dest)))) stop('Dimensions of input data must match')
-     
-     if ( !(identical(dimnames(M)[[1]], dimnames(D)[[1]])) | !(identical(dimnames(M)[[1]], names(N_orig))) ) {
-          stop('Dimension names of input data do not match.')
-     }
-     
-     if ( !(identical(dimnames(M)[[2]], dimnames(D)[[2]])) | !(identical(dimnames(M)[[2]], names(N_dest))) ) {
-          stop('Dimension names of input data do not match.')
-     }
-     
-     message(
-          paste('::Fitting gravity model for', 
-                dim(M)[1], 
-                'origins and',
-                dim(M)[2], 
-                'destinations::',
-                sep=' ')
-     )
-     
-     if (!all(unlist(lapply(list(M, N_orig, N_dest), is.integer)))) {
-          M[,] <- as.integer(M)
-          N_orig[] <- as.integer(N_orig)
-          N_dest[] <- as.integer(N_dest)
-     }
-     
-     if (is.null(prior)) { 
+     if (all(orig, dest)) {
           
-          message('Using uniformative priors')
-          prior <- c(1, 0.05)
-          prior <- list(theta=prior,
-                        omega_1=prior,
-                        omega_2=prior,
-                        gamma=prior)
+          out <- rbind(
+               data %>% 
+                    rename(x=orig_x, y=orig_y, id=orig_id) %>%
+                    select(x, y, id) %>%
+                    data.frame(),
+               data %>% 
+                    rename(x=dest_x, y=dest_y, id=dest_id) %>%
+                    select(x, y, id) %>%
+                    data.frame()
+          )
+          
+     } else if (all(orig, !dest)) {
+          
+          out <- data %>% 
+               rename(x=orig_x, y=orig_y, id=orig_id) %>%
+               select(x, y, id) %>%
+               data.frame()
+          
+     } else if (all(!orig, dest)) {
+          
+          out <- data %>% 
+               rename(x=dest_x, y=dest_y, id=dest_id) %>%
+               select(x, y, id) %>%
+               data.frame()
           
      } else {
           
-          message('Using supplied informative priors')
+          stop('At least one of the "orig" or "dest" arguments must be TRUE')
      }
      
-     jags.data <- list(
-          M=M,                     
-          D=D,                     
-          N_orig=N_orig,
-          N_dest=N_dest,
-          prior_theta=prior$theta,
-          prior_omega_1=prior$omega_1,
-          prior_omega_2=prior$omega_2,
-          prior_gamma=prior$gamma
-     )
-     
-     jags.model <- "
-     model {     
-          
-          # Poisson likelihood
-          for (i in 1:length(N_orig)) {
-               for (j in 1:length(N_dest)) {
-                    
-                    M[i,j] ~ dpois(pi[i,j]*N_orig[i]) 
-               }
-               
-               pi[i,1:length(N_dest)] <- c[i,]/sum(c[i,])
-          }
-          
-          for (i in 1:length(N_orig)) {
-               for (j in 1:length(N_dest)) {
-                    
-                    # Gravity model
-                    c[i,j] <- ifelse(
-                         i == j, 
-                         0,
-                         exp(log(theta) + (omega_1*log(N_dest[i]) + omega_2*log(N_orig[j]) - log( f.d[i,j] )))
-                    )
-                    
-                    # Dispersal kernel
-                    f.d[i,j] <- D[i,j]^gamma
-               }
-          }
-          
-          ### Priors ###
-          theta ~ dgamma(prior_theta[1], prior_theta[2])
-          omega_1 ~ dgamma(prior_omega_1[1], prior_omega_1[2])
-          omega_2 ~ dgamma(prior_omega_2[1], prior_omega_2[2])
-          gamma ~ dgamma(prior_gamma[1], prior_gamma[2])
-          
-     }"
-     
-     
-     params <- c('omega_1', 'omega_2', 'theta', 'gamma')
-     
-     init.list <- replicate(n.chain, 
-                            list(.RNG.name='lecuyer::RngStream',
-                                 .RNG.seed= sample(1:1e6, 1)), 
-                            simplify=FALSE)
-     
-     if (parallel == TRUE) {
-          
-          method <- 'parallel'
-          
-     } else if (parallel == FALSE) {
-          
-          method <- 'rjags'
-     }
-     
-     runjags::run.jags(model=jags.model,
-                       data=jags.data,
-                       monitor=params,
-                       n.chains=n.chain,
-                       adapt=n.adapt,
-                       burnin=n.burn,
-                       sample=n.samp,
-                       thin=n.thin,
-                       inits=init.list,
-                       modules=c('lecuyer'),
-                       method=method,
-                       summarise=FALSE)
+     out %>% 
+          dplyr::group_by(id) %>%
+          dplyr::distinct(id, .keep_all = T) %>% 
+          dplyr::arrange(id) %>%
+          data.frame()
 }
 
-
-
-##' Estimate probability of travelling outside origin
+##' Get unique origin and destination names
 ##' 
-##' This function fits a hierarchical model that estimates the probability an individual travels outside their home location
-##' within the time period of the survey (tau). The model estimates both the overall population-level probability of travel (tau_pop) and 
-##' the origin-level probability of travel (tau_i). Further this method is designed for sparse observations that typically result from 
-##' travel survey data, where unobserved routes of travel regress to the population mean.
+##' This function returns coordinates for all unique locations in supplied data.
 ##' 
-##' @param V_travel named vector of total number of people that reported travelling outside their home location
-##' @param V_tot named vector of the total number of individuals in travel survey for each location
-##' @param n.chain number of MCMC sampling chains
-##' @param n.adapt number of adaptive iterations
-##' @param n.burn number of iterations to discard before sampling of chains begins (burn in)
-##' @param n.samp number of iterations to sample each chain
-##' @param n.thin interval to thin samples 
-##' @param parallel logical indicating whether or not to run MCMC chains in parallel or sequentially (default = FALSE)
+##' @param data generalized data frame described in \code{\link{travel.survey}} or derivative thereof
+##' @param orig logical indicating whether to include origin location in unique names (default= TRUE)
+##' @param dest logical indicating whether to include destination location in unique names (default= TRUE)
 ##' 
-##' @return dataframe giving input data along with estimates of travel probability for each location
+##' @return two column dataframe containing unique names
 ##' 
 ##' @author John Giles
 ##' 
-##' @example R/examples/fit_prob_travel.R
+##' @example R/examples/get_pop_vec.R
 ##'
-##' @family model
-##' @family travel survey
+##' @family utility
 ##' 
 ##' @export
 ##' 
 
-fit.prob.travel <- function(
-     V_travel,
-     V_tot,
-     n.chain=4,
-     n.adapt=1000,
-     n.burn=1000,
-     n.samp=1000,
-     n.thin=1,
-     parallel=FALSE
+get.pop.vec <- function(data,
+                        orig=TRUE,
+                        dest=TRUE
 ) {
      
-     # Check data
-     if (!(identical(length(V_travel), length(V_tot)))) stop('Dimensions of input data must match')
-     if ( !(identical(names(V_travel), names(V_tot))) ) stop('Dimension names of input data do not match.')
-     if (is.null(names(V_travel))) stop('Vectors are not named.')
+     if (is.factor(data$orig_id)) data$orig_id <- as.character(data$orig_id)
+     if (is.factor(data$dest_id)) data$dest_id <- as.character(data$dest_id)
      
-     # Work around for NAs
-     na.fix <- any(is.na(V_travel)) | any(is.na(V_tot))
-     if (na.fix) {
-          sel <- complete.cases(cbind(V_travel, V_tot))
-     } else {
-          sel <- seq_along(V_travel)
-     }
-     
-     jags.data <- list(
-          V_travel=V_travel[sel],
-          V_tot=V_tot[sel]
-     )
-     
-     jags.model <- "
-     model {     
+     if (all(orig, dest)) {
           
-          # Origin-level probability of travel
-          for (j in 1:length(V_travel)) {
-               
-               V_travel[j] ~ dbin(tau[j], V_tot[j])
-          }
-          
-          # Population-level hyper-prior
-          tau_pop ~ dbeta(1, 1) 
-          
-          # Origin-level priors
-          for (k in 1:length(V_travel)) {
-               
-               tau[k] ~ dnorm(tau_pop, 10) T(0,1)
-          }
-     }"
-     
-     params <- c('tau_pop', 'tau')
-     
-     init.list <- replicate(n.chain, 
-                            list(.RNG.name='lecuyer::RngStream',
-                                 .RNG.seed= sample(1:1e6, 1)), 
-                            simplify=FALSE)
-     
-     if (parallel == TRUE) {
-          method <- 'parallel'
-     } else if (parallel == FALSE) {
-          method <- 'rjags'
-     }
-     
-     mod <- summary(
-          runjags::run.jags(model=jags.model,
-                            data=jags.data,
-                            monitor=params,
-                            n.chains=n.chain,
-                            adapt=n.adapt,
-                            burnin=n.burn,
-                            sample=n.samp,
-                            thin=n.thin,
-                            inits=init.list,
-                            modules=c('lecuyer'),
-                            method=method,
-                            summarise=FALSE)
-     )
-     
-     if (na.fix) {
-          
-          # Merge with missing obs
-          out <- merge(
-               data.frame(orig_id=names(V_travel),
-                          travel=V_travel,
-                          total=V_tot,
-                          row.names=NULL),
-               data.frame(orig_id=names(V_travel[sel]),
-                          travel=V_travel[sel],
-                          total=V_tot[sel],
-                          mod[-1,],
-                          row.names=NULL),
-               all=T
+          out <- rbind(
+               data %>% rename(pop=orig_pop, id=orig_id) %>%
+                    select(pop, id) %>%
+                    data.frame(),
+               data %>% rename(pop=dest_pop, id=dest_id) %>%
+                    select(pop, id) %>%
+                    data.frame()
           )
           
-          # Set missing obs to population mean
-          for(i in which(!sel)) out[i, -(1:3)] <- mod['tau_pop',]
-          return(out)
+     } else if (all(orig, !dest)) {
+          
+          out <- data %>% rename(pop=orig_pop, id=orig_id) %>%
+               select(pop, id) %>%
+               data.frame()
+          
+     } else if (all(!orig, dest)) {
+          
+          out <- data %>% rename(pop=dest_pop, id=dest_id) %>%
+               select(pop, id) %>%
+               data.frame()
           
      } else {
           
-          return(
-               data.frame(orig_id=names(V_travel),
-                          travel=V_travel,
-                          total=V_tot,
-                          mod[-1,],
-                          row.names=NULL)
-          )
+          stop('At least one of the "orig" or "dest" arguments must be TRUE')
+     }
+     
+     out <- out %>% 
+          dplyr::group_by(id) %>%
+          dplyr::distinct(id, .keep_all=T) %>% 
+          dplyr::arrange(id) %>%
+          data.frame()
+     
+     setNames(out$pop, out$id)
+}
+
+
+##' Fix off-diagonal zeros in distance matrix
+##' 
+##' This function checks the distance matrix produced by the \code{\link{get.distance.matrix}} function for off-diagonal zeros. The function
+##' fills in zeros with nearby locations from the same admin unit. 
+##' 
+##' @param D distance matrix produced by the \code{\link{get.distance.matrix}} function
+##' 
+##' @return the same distance matrix with zeros fixed 
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/check_distance_matrix.R
+##' 
+##' @family utility
+##' 
+##' @export
+##' 
+
+check.distance.matrix <- function(D) {
+     
+     # Check off diagonal zeros
+     zeros1 <- sum(D[lower.tri(D)] == 0, D[upper.tri(D)] == 0)
+     if (zeros1 > 0) {
+          
+          z <- which(D == 0, arr.ind = T)
+          z <- z[z[,'origin'] != z[,'destination'],]
+          
+          for (i in 1:nrow(z)) {
+               
+               D[z[i,'origin'], z[i,'destination']] <- D[z[i,'origin']-1, z[i,'destination']-1]
+          }
+          
+     } else {
+          
+          message(paste('Distance matrix has', zeros1, "off-diagonal zeros."))
+          return(D)
+     }
+     
+     # try other direction in case some zeros missed
+     zeros2 <- sum(D[lower.tri(D)] == 0, D[upper.tri(D)] == 0)
+     if (zeros2 > 0) {
+          
+          z <- which(D == 0, arr.ind = T)
+          z <- z[z[,'origin'] != z[,'destination'],]
+          
+          for (i in 1:nrow(z)) {
+               
+               D[z[i,'origin'], z[i,'destination']] <- D[z[i,'origin']+1, z[i,'destination']+1]
+          }
+     }
+     
+     # check 
+     zeros3 <- sum(D[lower.tri(D)] == 0, D[upper.tri(D)] == 0)
+     if (zeros3 > 0) {
+          
+          stop(paste('Could not fix', zeros1, "off-diagonal zeros. Check manually."))
+          
+     } else {
+          
+          warning(paste('Fixed', zeros1, "off-diagonal zeros using locations from same admin unit."))
+          return(D)
      }
 }
+
+
+
+##' Make data set of travel and stays
+##' 
+##' This function build a data set containing the number of individuals that remain in their home location (stay) or travel to another location
+##' during the time span of the survey. The output is designed to provide data for the \code{\link{fit.prob.travel}} function. The admin unit used to aggregate the travel/stay
+##' counts depend on the arguemtns supplied:
+##' \enumerate{
+##' \item When \code{data.pred} is supplied and \code{agg.adm = NULL}, the lowest admin unit of \code{data.pred} is used
+##' \item When both \code{data.pred} and \code{agg.adm} are \code{NULL}, the lowest admin unit of \code{data} is used
+##' }
+##' 
+##' @param data generalized data frame described in \code{\link{travel.survey}} or derivative thereof
+##' @param data.pred generalized data frame containing the admin units at which to predict probability of travel
+##' @param agg.adm optional argument (logical) giving an arbitarary admin unit over which to aggregate travel/stay counts
+##' 
+##' @return dataframe with same columns as \code{\link{travel.survey}} data with columns for counts of travel/stay/total
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_stay_data.R
+##'
+##' @family data synthesis
+##' 
+##' @export
+##' 
+
+get.stay.data <- function(data,
+                          data.pred=NULL,
+                          agg.adm=NULL
+) {
+     
+     data_trip <- data[!is.na(data$trips),]
+     data_stay <- data[is.na(data$trips),]
+     
+     if (all(is.null(data.pred), is.null(agg.adm))) agg.adm <- get.admin.level(data_trip)
+     if (!is.null(data.pred) & is.null(agg.adm)) agg.adm <- get.admin.level(data.pred)
+     
+     id.check <- c('orig_id','dest_id')
+     if (any(id.check %in% colnames(data_trip))) data_trip <- data_trip[,!(colnames(data_trip) %in% id.check)]
+     if (any(id.check %in% colnames(data_stay))) data_stay <- data_stay[,!(colnames(data_stay) %in% id.check)]
+     
+     data_trip <- cbind(data_trip, get.unique.names(data_trip, adm.start=1, adm.stop=agg.adm))
+     data_stay <- cbind(data_stay, get.unique.names(data_stay, adm.start=1, adm.stop=agg.adm))
+     data.pred <- cbind(data.pred, get.unique.names(data.pred, adm.start=1, adm.stop=agg.adm))
+     
+     out <- merge(
+          data_stay %>% 
+               dplyr::group_by(orig_id) %>%
+               dplyr::mutate(stay=n_distinct(indiv_id, na.rm=T)) %>%
+               dplyr::distinct(orig_id, .keep_all=T) %>%
+               data.frame(), 
+          data_trip %>% 
+               dplyr::group_by(orig_id) %>%
+               dplyr::mutate(travel=n_distinct(indiv_id, na.rm=T)) %>%
+               dplyr::mutate(travel=ifelse(travel == 0, NA, travel)) %>%
+               dplyr::distinct(orig_id, .keep_all=T) %>%
+               dplyr::select(orig_id, travel) %>%
+               data.frame(), 
+          by='orig_id', 
+          all.y=T
+     )
+     
+     out$total <- out$stay + out$travel
+     
+     # Aggregate to level of prediction and merge with prediction locations
+     if (!is.null(data.pred)) {
+          
+          # check all stays in prediction data
+          if (all(out$orig_id %in% data.pred$orig_id)) warning('Not all locations in stay data are present in prediction data')
+          
+          sel_row <- !(data.pred$orig_id %in% out$orig_id) # only admins not in data already
+          sel_col <- which(apply(data.pred, 2, function(x) !all(is.na(x)))) # only cols with data
+          
+          suppressMessages(
+               out <- dplyr::full_join(out, data.pred[sel_row, sel_col])
+          )
+          
+          out$indiv_id <- NA
+          
+          return(out[,c(colnames(data_trip), c('stay', 'travel', 'total'))] )
+          
+     } else if (is.null(data.pred)) {
+          
+          return(out)
+     }
+}
+
+
+##' Find the lowest admin unit
+##' 
+##' This function checks which admin levels are in a generalized a data frame formatting like \code{\link{travel.survey}} and 
+##' returns the lowest admin unit.
+##' 
+##' @param data generalized data frame described in \code{\link{travel.survey}} or derivative thereof
+##' 
+##' @return integer
+##' 
+##' @author John Giles
+##' 
+##' @example R/examples/get_admin_level.R
+##'
+##' @family utility
+##' 
+##' @export
+##' 
+
+get.admin.level <- function(data) {
+     
+     admins <- grep('orig_adm', colnames(data))
+     
+     keep <- apply(
+          data[,admins], 
+          2, 
+          function(x) all(!is.na(x))
+     )
+     
+     admins <- admins[keep]
+     admins <- sort(colnames(data)[admins])
+     agg.adm <- admins[length(admins)]
+     as.integer(substr(agg.adm, nchar(agg.adm), nchar(agg.adm)))
+}
+
+
+

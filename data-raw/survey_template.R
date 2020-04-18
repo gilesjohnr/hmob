@@ -5,7 +5,7 @@ survey.template <- data.frame(
      indiv_id=integer(),      # unique individual identifier
      indiv_age=numeric(),     # Age of participant
      indiv_sex=logical(),     # Gender of perticipant
-     indiv_type=factor(),     # If individual participants belong to different groups
+     indiv_type=character(),     # If individual participants belong to different groups
      orig_adm0=character(),   # Name of highest administration level of origin location (country)
      orig_adm1=character(),   # Name of administration level 1 of origin location
      orig_adm2=character(),   # Name of administration level 2 of origin location
@@ -26,7 +26,7 @@ survey.template <- data.frame(
      dest_x=numeric(),        # Longitude of origin location in decimal degrees
      dest_y=numeric(),        # Latitude of origin location in decimal degrees
      dest_pop=numeric(),      # Population size of lowest administrative unit
-     trips=numeric()          # Total number of trips individual made from origin to destination during time span of travel survey
-)
+     trips=numeric(),          # Total number of trips individual made from origin to destination during time span of travel survey
+stringsAsFactors=FALSE)
 
 save(survey.template, file='data/survey.template.rda')
