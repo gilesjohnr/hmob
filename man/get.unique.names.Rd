@@ -6,6 +6,8 @@
 \usage{
 get.unique.names(
   data,
+  orig = TRUE,
+  dest = TRUE,
   adm.start = NULL,
   adm.stop = NULL,
   name.class = "character"
@@ -13,6 +15,10 @@ get.unique.names(
 }
 \arguments{
 \item{data}{generalized data frame described in \code{\link{travel.survey}}}
+
+\item{orig}{logical indicating whether to include unique coordinates from origin locations (default=TRUE)}
+
+\item{dest}{logical indicating whether to include unique coordinates from destination locations (default=TRUE)}
 
 \item{adm.start}{highest administrative level to include in unique names (default = NULL, which uses highest observed in the data)}
 

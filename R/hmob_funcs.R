@@ -3603,6 +3603,7 @@ check.distance.matrix <- function(D) {
 ##' @param data generalized data frame described in \code{\link{travel.survey}} or derivative thereof
 ##' @param data.pred generalized data frame containing the admin units at which to predict probability of travel
 ##' @param agg.adm optional argument (logical) giving an arbitarary admin unit over which to aggregate travel/stay counts
+##' @param name.class character indicating whether unique names should be either a unique character string (\code{name.class = "character"}) or a unique integer code (\code{name.class = "numeric"}) 
 ##' 
 ##' @return dataframe with same columns as \code{\link{travel.survey}} data with columns for counts of travel/stay/total
 ##' 
@@ -3617,22 +3618,20 @@ check.distance.matrix <- function(D) {
 
 get.stay.data <- function(data,
                           data.pred=NULL,
-                          agg.adm=NULL
+                          agg.adm=NULL,
+                          name.class="character"
 ) {
      
-     data_trip <- data[!is.na(data$trips),]
-     data_stay <- data[is.na(data$trips),]
-     
+     if (length(unique(data$date_span)) > 1) warning('Data contain multiple date spans')
      if (all(is.null(data.pred), is.null(agg.adm))) agg.adm <- get.admin.level(data_trip)
      if (!is.null(data.pred) & is.null(agg.adm)) agg.adm <- get.admin.level(data.pred)
      
      id.check <- c('orig_id','dest_id')
-     if (any(id.check %in% colnames(data_trip))) data_trip <- data_trip[,!(colnames(data_trip) %in% id.check)]
-     if (any(id.check %in% colnames(data_stay))) data_stay <- data_stay[,!(colnames(data_stay) %in% id.check)]
+     if (any(id.check %in% colnames(data))) data <- data[,!(colnames(data) %in% id.check)]
      
-     data_trip <- cbind(data_trip, get.unique.names(data_trip, adm.start=1, adm.stop=agg.adm))
-     data_stay <- cbind(data_stay, get.unique.names(data_stay, adm.start=1, adm.stop=agg.adm))
-     data.pred <- cbind(data.pred, get.unique.names(data.pred, adm.start=1, adm.stop=agg.adm))
+     data$orig_id <- get.unique.names(data, adm.stop=agg.adm)$orig_id
+     data_trip <- data[!is.na(data$trips),]
+     data_stay <- data[is.na(data$trips),]
      
      out <- merge(
           data_stay %>% 
@@ -3656,25 +3655,32 @@ get.stay.data <- function(data,
      # Aggregate to level of prediction and merge with prediction locations
      if (!is.null(data.pred)) {
           
+          if (any(id.check %in% colnames(data.pred))) data.pred <- data.pred[,!(colnames(data.pred) %in% id.check)]
+          
+          data.pred$orig_id <- get.unique.names(data.pred, dest=F, adm.stop=agg.adm)$orig_id
+          
           # check all stays in prediction data
           if (all(out$orig_id %in% data.pred$orig_id)) warning('Not all locations in stay data are present in prediction data')
           
           sel_row <- !(data.pred$orig_id %in% out$orig_id) # only admins not in data already
           sel_col <- which(apply(data.pred, 2, function(x) !all(is.na(x)))) # only cols with data
           
-          suppressMessages(
-               out <- dplyr::full_join(out, data.pred[sel_row, sel_col])
+          suppressWarnings(
+               suppressMessages(
+                    out <- dplyr::full_join(out, data.pred[sel_row, sel_col])
+               )
           )
           
-          out$indiv_id <- NA
-          
-          return(out[,c(colnames(data_trip), c('stay', 'travel', 'total'))] )
-          
-     } else if (is.null(data.pred)) {
-          
-          return(out)
-     }
+          out <- out[,c(colnames(data_trip), c('stay', 'travel', 'total'))] 
+     } 
+     
+     out$indiv_id <- NA
+     out$date_span <- data$date_span[1]
+     out$orig_id <- get.unique.names(out, adm.stop=agg.adm, dest=F, name.class=name.class)$orig_id
+     if ('dest_id' %in% colnames(out)) out <- out[,colnames(out) != 'dest_id']
+     out
 }
+
 
 
 ##' Find the lowest admin unit

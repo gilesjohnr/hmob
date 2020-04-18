@@ -4,7 +4,7 @@
 \alias{get.stay.data}
 \title{Make data set of travel and stays}
 \usage{
-get.stay.data(data, data.pred = NULL, agg.adm = NULL)
+get.stay.data(data, data.pred = NULL, agg.adm = NULL, name.class = "character")
 }
 \arguments{
 \item{data}{generalized data frame described in \code{\link{travel.survey}} or derivative thereof}
@@ -12,6 +12,8 @@ get.stay.data(data, data.pred = NULL, agg.adm = NULL)
 \item{data.pred}{generalized data frame containing the admin units at which to predict probability of travel}
 
 \item{agg.adm}{optional argument (logical) giving an arbitarary admin unit over which to aggregate travel/stay counts}
+
+\item{name.class}{character indicating whether unique names should be either a unique character string (\code{name.class = "character"}) or a unique integer code (\code{name.class = "numeric"})}
 }
 \value{
 dataframe with same columns as \code{\link{travel.survey}} data with columns for counts of travel/stay/total
