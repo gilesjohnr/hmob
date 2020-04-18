@@ -3243,6 +3243,8 @@ get.sparse.mob.matrix <- function(orig,
 ##' This function builds unique character string identifiers for all origins and destinations. 
 ##' 
 ##' @param data generalized data frame described in \code{\link{travel.survey}}
+##' @param orig logical indicating whether to include unique coordinates from origin locations (default=TRUE)
+##' @param dest logical indicating whether to include unique coordinates from destination locations (default=TRUE)
 ##' @param adm.start highest administrative level to include in unique names (default = NULL, which uses highest observed in the data)
 ##' @param adm.stop lowest administrative level to include in unique names (default = NULL, which uses lowest observed in the data)
 ##' @param name.class character indicating whether unique names should be either a unique character string (\code{name.class = "character"}) or a unique integer code (\code{name.class = "numeric"}) 
@@ -3259,75 +3261,131 @@ get.sparse.mob.matrix <- function(orig,
 ##' 
 
 get.unique.names <- function(data,
+                             orig=TRUE,
+                             dest=TRUE,
                              adm.start=NULL,
                              adm.stop=NULL,
                              name.class="character"
 ) {
      
-     if (length(unique(data$date_span)) > 1) warning('Data contain multiple date spans')
+     if (is.null(orig) & is.null(dest)) stop('Both orig and dest cannot be FALSE')
      
-     sel <- grep('orig_adm', colnames(data))
-     if (is.null(adm.start)) adm.start <- 0
-     if (is.null(adm.stop)) adm.stop <- length(sel)-1
-     sel <- sel[order(colnames(data)[sel])]
-     sel_orig <- sel[(adm.start+1):(adm.stop+1)]
+     pads <- data.frame(
+          adm.level=0:6,
+          n=c(3, # admin0 
+              3, # admin1 
+              3, # admin2 
+              4, # admin3 
+              5, # admin4
+              5, # admin5
+              5) # admin6
+     )
      
-     sel <- grep('dest_adm', colnames(data))
-     if (is.null(adm.start)) adm.start <- 0
-     if (is.null(adm.stop)) adm.stop <- length(sel)-1
-     sel <- sel[order(colnames(data)[sel])]
-     sel_dest <- sel[(adm.start+1):(adm.stop+1)]
-     
-     if (name.class == "character") {
+     if (all(orig, dest)) {
           
-          orig_id <- apply(data[,sel_orig], 1, function(x) paste(x[!is.na(x)], collapse='_'))
-          dest_id <- apply(data[,sel_dest], 1, function(x) paste(x[!is.na(x)], collapse='_'))
+          sel <- grep('orig_adm', colnames(data))
+          if (is.null(adm.start)) adm.start <- 0
+          if (is.null(adm.stop)) adm.stop <- length(sel)-1
+          sel <- sel[order(colnames(data)[sel])]
+          sel_orig <- sel[(adm.start+1):(adm.stop+1)]
           
-          fac <- factor(c(orig_id, dest_id))
-          orig_id <- factor(orig_id, levels=levels(fac))
-          dest_id <- factor(dest_id, levels=levels(fac))
+          sel <- grep('dest_adm', colnames(data))
+          if (is.null(adm.start)) adm.start <- 0
+          if (is.null(adm.stop)) adm.stop <- length(sel)-1
+          sel <- sel[order(colnames(data)[sel])]
+          sel_dest <- sel[(adm.start+1):(adm.stop+1)]
           
-     } else if (name.class == "numeric") {
-          
-          pads <- data.frame(
-               adm.level=0:6,
-               n=c(3, # admin0 
-                   3, # admin1 
-                   3, # admin2 
-                   4, # admin3 
-                   5, # admin4
-                   5, # admin5
-                   5) # admin6
-          )
-          
-          for (i in seq_along(sel_orig)) {
+          if (name.class == "character") {
                
-               n.pad <- pads$n[(adm.start+1) + (i-1)]
-               fac <- factor(sort(unique(c(data[,sel_orig[i]], data[,sel_dest[i]]))))
+               orig_id <- apply(data[,sel_orig], 1, function(x) paste(x[!is.na(x)], collapse='_'))
+               dest_id <- apply(data[,sel_dest], 1, function(x) paste(x[!is.na(x)], collapse='_'))
                
-               data[,sel_orig[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_orig[i]], levels=levels(fac))), 
-                                                      width=n.pad,
-                                                      side='left', 
-                                                      pad="0")
+          } else if (name.class == "numeric") {
                
-               data[,sel_dest[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_dest[i]], levels=levels(fac))), 
-                                                      width=n.pad,
-                                                      side='left', 
-                                                      pad="0")
+               for (i in seq_along(sel_orig)) {
+                    
+                    n.pad <- pads$n[(adm.start+1) + (i-1)]
+                    fac <- factor(sort(unique(c(data[,sel_orig[i]], data[,sel_dest[i]]))))
+                    
+                    data[,sel_orig[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_orig[i]], levels=levels(fac))), 
+                                                           width=n.pad,
+                                                           side='left', 
+                                                           pad="0")
+                    
+                    data[,sel_dest[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_dest[i]], levels=levels(fac))), 
+                                                           width=n.pad,
+                                                           side='left', 
+                                                           pad="0")
+               } 
+               
+               orig_id <- apply(data[,sel_orig], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
+               dest_id <- apply(data[,sel_dest], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
           } 
           
-          orig_id <- apply(data[,sel_orig], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
-          dest_id <- apply(data[,sel_dest], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
+          fac <- factor(c(orig_id, dest_id))
           
-     } else {
+          return(
+               data.frame(orig_id=factor(orig_id, levels=levels(fac)),
+                          dest_id=factor(dest_id, levels=levels(fac)))
+          )
           
-          stop('name.class argument must be either "character" or "numeric"')
+     } else if (all(orig, !dest)) {
+          
+          sel <- grep('orig_adm', colnames(data))
+          if (is.null(adm.start)) adm.start <- 0
+          if (is.null(adm.stop)) adm.stop <- length(sel)-1
+          sel <- sel[order(colnames(data)[sel])]
+          sel_orig <- sel[(adm.start+1):(adm.stop+1)]
+          
+          if (name.class == "character") {
+               
+               orig_id <- apply(data[,sel_orig], 1, function(x) paste(x[!is.na(x)], collapse='_'))
+               
+          } else if (name.class == "numeric") {
+               
+               for (i in seq_along(sel_orig)) {
+                    
+                    n.pad <- pads$n[(adm.start+1) + (i-1)]
+                    data[,sel_orig[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_orig[i]])), 
+                                                           width=n.pad,
+                                                           side='left', 
+                                                           pad="0")
+               } 
+               
+               orig_id <- apply(data[,sel_orig], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
+          }
+          
+          return(data.frame(orig_id=factor(orig_id)))
+          
+     } else if (all(!orig, dest)) {
+          
+          sel <- grep('dest_adm', colnames(data))
+          if (is.null(adm.start)) adm.start <- 0
+          if (is.null(adm.stop)) adm.stop <- length(sel)-1
+          sel <- sel[order(colnames(data)[sel])]
+          sel_dest <- sel[(adm.start+1):(adm.stop+1)]
+          
+          if (name.class == "character") {
+               
+               dest_id <- apply(data[,sel_dest], 1, function(x) paste(x[!is.na(x)], collapse='_'))
+               
+          } else if (name.class == "numeric") {
+               
+               for (i in seq_along(sel_dest)) {
+                    
+                    n.pad <- pads$n[(adm.start+1) + (i-1)]
+                    data[,sel_dest[i]] <- stringr::str_pad(as.numeric(factor(data[,sel_dest[i]])), 
+                                                           width=n.pad,
+                                                           side='left', 
+                                                           pad="0")
+               } 
+               
+               dest_id <- apply(data[,sel_dest], 1, function(x) as.character(as.numeric(paste(x[!is.na(x)], collapse=''))))
+          }
+          
+          return(data.frame(dest_id=factor(dest_id)))
      }
-     
-     
-     data.frame(orig_id, dest_id)
 }
-
 
 
 
